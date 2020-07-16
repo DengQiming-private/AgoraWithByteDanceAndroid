@@ -1,0 +1,48 @@
+//
+// Created by 张涛 on 2020/2/27.
+//
+
+#ifndef AGORA_VIDEO_WITH_FACEUNITY_ANDROID_JNIHELPER_H
+#define AGORA_VIDEO_WITH_FACEUNITY_ANDROID_JNIHELPER_H
+
+#include <jni.h>
+
+namespace agora {
+    namespace extension {
+        class JniHelper {
+        private:
+            JniHelper(JavaVM *jvm);
+
+            JavaVM *javaVm;
+            static JniHelper *jniHelper;
+
+        public:
+            bool isAttached = false;
+
+            ~JniHelper();
+
+            static JniHelper *createJniHelper(JavaVM *jvm);
+
+            static JniHelper *getJniHelper();
+
+            static void release();
+
+            JNIEnv *getEnv();
+
+            JNIEnv *attachCurrentTnread();
+
+            void detachCurrentThread();
+        };
+
+        class AndroidContextHelper {
+        public:
+            AndroidContextHelper() = delete;
+            static void setContext(void * context);
+            static void * getContext();
+            static void releaseContext(JNIEnv* env);
+        private:
+            static void * _context;
+        };
+    }
+}
+#endif //AGORA_VIDEO_WITH_FACEUNITY_ANDROID_JNIHELPER_H
