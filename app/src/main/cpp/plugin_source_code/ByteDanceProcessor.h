@@ -8,10 +8,13 @@
 #include <thread>
 #include <string>
 #include <mutex>
+#include <vector>
 
 #include "../agora/AgoraRefPtr.h"
+#include "../agora/AgoraMediaBase.h"
 #include "../bytedance/bef_effect_ai_api.h"
 #include "EGLCore.h"
+#include "rapidjson/rapidjson.h"
 
 namespace agora {
     namespace extension {
@@ -21,7 +24,7 @@ namespace agora {
 
             bool releaseOpenGL();
 
-            int initEffectEngine();
+            int updateEffect(const agora::media::VideoFrame &capturedFrame);
 
             int releaseEffectEngine();
 
@@ -29,18 +32,24 @@ namespace agora {
 
             std::thread::id getThreadId();
         protected:
-            ~ByteDanceProcessor() {
-                PRINTF_ERROR("&&&&&&&&&&&&&~ByteDanceProcessor()");
-            }
+            ~ByteDanceProcessor() {}
         private:
             EglCore *eglCore_ = nullptr;
-            bef_effect_handle_t specialEffectHandler_ = nullptr;
+            EGLSurface offscreenSurface_ = nullptr;
+
+            bef_effect_handle_t byteEffectHandler_ = nullptr;
             std::string licensePath_;
             std::string modelDir_;
             bool engineLoaded = false;
             std::mutex mutex_;
             bool aiEffectEnabled_ = false;
-            bool aiEffectLoaded_ = false;
+
+            char** aiNodes_ = nullptr;
+            rapidjson::SizeType aiNodeCount_ = 0;
+            std::vector<float> aiNodeIntensities_;
+            std::vector<std::string> aiNodeKeys_;
+            bool aiEffectNeedUpdate_ = false;
+
         };
     }
 }

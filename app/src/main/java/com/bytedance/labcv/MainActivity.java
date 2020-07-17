@@ -17,6 +17,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -54,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
         checkPermission();
         File dstFile = getExternalFilesDir("assets");
         Toast.makeText(this, dstFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
+        ResourceHelper.setResourceReady(this, true, 1);
 
         if (!ResourceHelper.isResourceReady(this, 1)) {
             Log.d("Agora_zt", "Resource is not ready, need to copy resource");
@@ -203,6 +205,22 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             o.put("plugin.bytedance.licensePath", ResourceHelper.getLicensePath(this));
             o.put("plugin.bytedance.modelDir", ResourceHelper.getModelDir(this));
             o.put("plugin.bytedance.aiEffectEnabled", true);
+
+            JSONObject node1 = new JSONObject();
+            node1.put("path", ResourceHelper.getComposePath(this) + "lip/fuguhong");
+            node1.put("key", "Internal_Makeup_Lips");
+            node1.put("intensity", 1.0);
+
+            JSONObject node2 = new JSONObject();
+            node2.put("path", ResourceHelper.getComposePath(this) + "blush/weixun");
+            node2.put("key", "Internal_Makeup_Blusher");
+            node2.put("intensity", 1.0);
+
+            JSONArray arr = new JSONArray();
+            arr.put(node1);
+            arr.put(node2);
+            o.put("plugin.bytedance.ai.composer.nodes", arr);
+
             AgoraByteDanceNative.setParameters(o.toString());
         } catch (JSONException e) {
             e.printStackTrace();
