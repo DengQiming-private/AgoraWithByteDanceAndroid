@@ -27,7 +27,7 @@ namespace agora {
         bool ExtensionVideoFilter::adaptVideoFrame(const agora::media::VideoFrame &capturedFrame,
                                                    agora::media::VideoFrame &adaptedFrame) {
 //            PRINTF_INFO("adaptVideoFrame");
-            byteDanceProcessor_->updateEffect(capturedFrame);
+            byteDanceProcessor_->processFrame(capturedFrame);
             adaptedFrame = capturedFrame;
             return true;
         }

@@ -186,11 +186,11 @@ typedef struct bef_ai_image_t {
     int format;
 } bef_ai_image;
 
-struct bef_ai_tt_key_point {
+typedef struct bef_ai_tt_key_point_st {
     float x; // 对应 cols, 范围在 [0, width] 之间
     float y; // 对应 rows, 范围在 [0, height] 之间
     bool is_detect; // 如果该值为 false, 则 x,y 无意义
-};
+} bef_ai_tt_key_point;
 
 
 #define EFFECT_HAND_DETECT_DELAY_FRAME_COUNT 4

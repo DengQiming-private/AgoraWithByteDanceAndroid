@@ -24,31 +24,54 @@ namespace agora {
 
             bool releaseOpenGL();
 
-            int updateEffect(const agora::media::VideoFrame &capturedFrame);
+            int processFrame(const agora::media::VideoFrame &capturedFrame);
 
             int releaseEffectEngine();
 
             int setParameters(std::string parameter);
+            void onDataCallback(std::string ballback);
 
             std::thread::id getThreadId();
         protected:
             ~ByteDanceProcessor() {}
         private:
+            void processEffect(const agora::media::VideoFrame &capturedFrame);
+            void prepareCachedVideoFrame(const agora::media::VideoFrame &capturedFrame);
+
             EglCore *eglCore_ = nullptr;
             EGLSurface offscreenSurface_ = nullptr;
+            std::mutex mutex_;
 
             bef_effect_handle_t byteEffectHandler_ = nullptr;
             std::string licensePath_;
             std::string modelDir_;
-            bool engineLoaded = false;
-            std::mutex mutex_;
             bool aiEffectEnabled_ = false;
-
             char** aiNodes_ = nullptr;
             rapidjson::SizeType aiNodeCount_ = 0;
             std::vector<float> aiNodeIntensities_;
             std::vector<std::string> aiNodeKeys_;
             bool aiEffectNeedUpdate_ = false;
+
+            bool faceAttributeEnabled_ = false;
+            bef_effect_handle_t faceDetectHandler_ = nullptr;
+            bef_effect_handle_t faceAttributesHandler_ = nullptr;
+
+            agora::media::VideoFrame prevFrame_ = {
+                    media::VIDEO_PIXEL_I420,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    nullptr,
+                    nullptr,
+                    nullptr,
+                    0,
+                    0,
+                    0
+            };
+            unsigned char* yuvBuffer_ = nullptr;
+            unsigned char* rgbaBuffer_ = nullptr;
 
         };
     }

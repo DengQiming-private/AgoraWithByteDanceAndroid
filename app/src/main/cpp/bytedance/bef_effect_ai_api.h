@@ -65,13 +65,13 @@ BEF_SDK_API bef_effect_result_t bef_effect_available_features(char (*features)[B
  */
 BEF_SDK_API bef_effect_result_t bef_effect_ai_set_camera_device_position(bef_effect_handle_t handle,  bef_ai_camera_position position);
 
-/**
-* @brief Set frame size.
-* @param handle     Effect handle
-* @param width      Texture width
-* @param height     Texture height
-* @return           If succeed return BEF_EFFECT_RESULT_SUC,  other value please see bef_effect_ai_public_define.h
-*/
+ /**
+ * @brief Set frame size.
+ * @param handle     Effect handle
+ * @param width      Texture width
+ * @param height     Texture height
+ * @return           If succeed return BEF_EFFECT_RESULT_SUC,  other value please see bef_effect_ai_public_define.h
+ */
 BEF_SDK_API bef_effect_result_t bef_effect_ai_set_width_height(bef_effect_handle_t handle, int width, int height);
 
 
@@ -194,26 +194,6 @@ BEF_SDK_API bef_effect_result_t bef_effect_ai_composer_set_mode(bef_effect_handl
 BEF_SDK_API bef_effect_result_t bef_effect_ai_algorithm_texture(bef_effect_handle_t handle, unsigned int textureid_src, double timeStamp);
 
 /**
- * @param handle          Effect handle
- * @param texture         texture source
- * @param buffer          buffer address
- * @param buffer_format   format of buffer, see bef_ai_pixel_format
- * @param buffer_width    with of buffer
- * @param buffer_height   height of buffer
- * @param buffer_stride   stride of buffer
- * @param timeStamp       current time, unit second
- * @return                if succeed return BEF_EFFECT_RESULT_SUC, other value please see bef_effect_ai_public_define.h
- */
-BEF_SDK_API bef_effect_result_t bef_effect_ai_algorithm_texture_with_buffer(bef_effect_handle_t handle,
-                                                                            unsigned int texture,
-                                                                            const unsigned char *buffer,
-                                                                            bef_ai_pixel_format buffer_format,
-                                                                            int buffer_width,
-                                                                            int buffer_height,
-                                                                            int buffer_stride,
-                                                                            double timeStamp);
-
-/**
  * @param [in] handle Created effect handle
  *                    初始化的特效句柄，需要再OpenGL环境中使用
  * @param [in] img_in 数据buffer
@@ -227,14 +207,14 @@ BEF_SDK_API bef_effect_result_t bef_effect_ai_algorithm_texture_with_buffer(bef_
  */
 BEF_SDK_API bef_effect_result_t
 bef_effect_ai_algorithm_buffer(
-        bef_effect_handle_t handle,
-        const unsigned char *img_in,
-        bef_ai_pixel_format fmt_in,
-        int image_width,
-        int image_height,
-        int image_stride,
-        double timestamp
-);
+                              bef_effect_handle_t handle,
+                              const unsigned char *img_in,
+                              bef_ai_pixel_format fmt_in,
+                              int image_width,
+                              int image_height,
+                              int image_stride,
+                              double timestamp
+                              );
 
 /**
  * @breif            Draw srcTexture with effects to dstTexture.
@@ -264,15 +244,15 @@ BEF_SDK_API bef_effect_result_t bef_effect_ai_process_texture(bef_effect_handle_
  */
 BEF_SDK_API bef_effect_result_t
 bef_effect_ai_process_buffer(bef_effect_handle_t handle,
-                             const unsigned char *img_in,
-                             bef_ai_pixel_format fmt_in,
-                             int image_width,
-                             int image_height,
-                             int image_stride,
-                             unsigned char *img_out,
-                             bef_ai_pixel_format fmt_out,
-                             double timestamp
-);
+                            const unsigned char *img_in,
+                            bef_ai_pixel_format fmt_in,
+                            int image_width,
+                            int image_height,
+                            int image_stride,
+                            unsigned char *img_out,
+                            bef_ai_pixel_format fmt_out,
+                            double timestamp
+                            );
 
 /**
  * @param handle      Effect handle that will be created
@@ -283,24 +263,14 @@ bef_effect_ai_process_buffer(bef_effect_handle_t handle,
 BEF_SDK_API bef_effect_result_t bef_effect_ai_set_intensity(bef_effect_handle_t handle, bef_intensity_type intensityType, float fIntensity);
 
 /**
- * @brief 开启或关闭并行框架，开启后算法在独立线程完成检测。默认不开启
- * @param handle effect handle
- * @param usePipeline 控制参数
+ * @brief SDK授权
+ * @param [in] handle Created effect detect handle
+ *                    已创建的句柄
+ * @param [in] license 授权文件字符串
+ * @param [in] length  授权文件字符串长度
+ * @return If succeed return BEF_RESULT_SUC, other value please refer bef_effect_ai_public_define.h
+ *         成功返回 BEF_RESULT_SUC, 授权码非法返回BEF_RESULT_INVALID_LICENSE，其它失败返回相应错误码, 具体请参考 bef_effect_ai_public_define.h
  */
-BEF_SDK_API bef_effect_result_t bef_effect_ai_use_pipeline_processor(bef_effect_handle_t handle, bool usePipeline);
-
-/**
-* @brief 清理并行框架残余算法任务，在切后台、切换分辨率或切相机时使用。总之画面会不连续出现的时候都应该调用
-* @param handle     Effect handle
-*/
-BEF_SDK_API bef_effect_result_t bef_effect_ai_clean_pipeline_processor_task(bef_effect_handle_t handle);
-
-/**
- * @brief 开启并行框架3buffer策略，避免 buffer 的拷贝
- * @param handle effect handle
- * @param use3Buffer 是否开启3buffer
- */
-BEF_SDK_API bef_effect_result_t bef_effect_ai_use_3buffer(bef_effect_handle_t handle, bool use3buffer);
 
 /**
  * @brief 获取人脸检测结果
@@ -357,11 +327,11 @@ BEF_SDK_API bef_effect_result_t bef_effect_ai_process_touch_event(bef_effect_han
 #ifdef __ANDROID__
 BEF_SDK_API bef_effect_result_t
 bef_effect_ai_check_license(
-        JNIEnv* env,
-        jobject context,
-        bef_effect_handle_t handle,
-        const char *licensePath
-);
+                           JNIEnv* env,
+                           jobject context,
+                           bef_effect_handle_t handle,
+                           const char *licensePath
+                           );
 #else
 BEF_SDK_API bef_effect_result_t
 bef_effect_ai_check_license(

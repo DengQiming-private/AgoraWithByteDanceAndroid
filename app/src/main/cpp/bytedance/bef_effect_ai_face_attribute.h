@@ -16,6 +16,7 @@ typedef enum {
   BEF_FACE_ATTRIBUTE_ATTRACTIVE   = 0x00000008,     //颜值
   BEF_FACE_ATTRIBUTE_HAPPINESS    = 0x00000010,     //开心程度
   BEF_FACE_ATTRIBUTE_RACIAL       = 0x00000020,     //肤色
+  BEF_FACE_ATTRIBUTE_CONFUSE      = 0x00000400,     //疑惑
 } bef_ai_face_attribute_types;
 
 typedef enum {
@@ -76,6 +77,7 @@ typedef struct bef_ai_face_attribute_info {
   float wear_sunglass_prob;           // 带墨镜的概率
   float blur_score;                   // 模糊程度
   float illumination;                 // 光照
+  float confused_prob;                ///< 疑惑表情概率 //TODO(chenriwei) 临时测试方法，确定要加这个功能的化，需要把它放到表情结构体里面
 } bef_ai_face_attribute_info;
 
 

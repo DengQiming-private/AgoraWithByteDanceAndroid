@@ -23,7 +23,7 @@ namespace agora {
             const std::lock_guard<std::mutex> lock(mutex_);
             if (!eglCore_) {
                 eglCore_ = new EglCore();
-                offscreenSurface_ = eglCore_->createOffscreenSurface(320, 640);
+                offscreenSurface_ = eglCore_->createOffscreenSurface(0, 0);
                 eglCore_->makeCurrent(offscreenSurface_);
             }
             return true;
@@ -41,80 +41,141 @@ namespace agora {
             return true;
         }
 
-        unsigned char* createYUVBuffer(const agora::media::VideoFrame &capturedFrame) {
+        void ByteDanceProcessor::prepareCachedVideoFrame(const agora::media::VideoFrame &capturedFrame) {
             int ysize = capturedFrame.yStride * capturedFrame.height;
             int usize = capturedFrame.uStride * capturedFrame.height / 2;
             int vsize = capturedFrame.vStride * capturedFrame.height / 2;
-            unsigned char * yuvBuffer = (unsigned char*)malloc(ysize + usize + vsize);
-            memcpy(yuvBuffer, capturedFrame.yBuffer, ysize);
-            memcpy(yuvBuffer + ysize, capturedFrame.uBuffer, usize);
-            memcpy(yuvBuffer + ysize + usize, capturedFrame.vBuffer, vsize);
-            return yuvBuffer;
-        }
+            if (yuvBuffer_ == nullptr ||
+            rgbaBuffer_ == nullptr ||
+            prevFrame_.width != capturedFrame.width ||
+            prevFrame_.height != capturedFrame.height ||
+            prevFrame_.yStride != capturedFrame.yStride ||
+            prevFrame_.uStride != capturedFrame.uStride ||
+            prevFrame_.vStride != capturedFrame.vStride) {
+                if (yuvBuffer_) {
+                    free(yuvBuffer_);
+                    yuvBuffer_ = nullptr;
+                }
+                if (rgbaBuffer_) {
+                    free(rgbaBuffer_);
+                    rgbaBuffer_ = nullptr;
+                }
 
-        unsigned char* createRGBABuffer(const agora::media::VideoFrame &capturedFrame ) {
-            return (unsigned char*)malloc(capturedFrame.yStride * capturedFrame.height * 4);
-        }
-        int ByteDanceProcessor::updateEffect(const agora::media::VideoFrame &capturedFrame) {
-            const std::lock_guard<std::mutex> lock(mutex_);
-            if (!aiEffectEnabled_) {
-                return 0;
+                yuvBuffer_ = (unsigned char*)malloc(ysize + usize + vsize);
+                rgbaBuffer_ = (unsigned char*)malloc(capturedFrame.yStride * capturedFrame.height * 4);
             }
+            // update YUV buffer
+            memcpy(yuvBuffer_, capturedFrame.yBuffer, ysize);
+            memcpy(yuvBuffer_ + ysize, capturedFrame.uBuffer, usize);
+            memcpy(yuvBuffer_ + ysize + usize, capturedFrame.vBuffer, vsize);
 
+            // update RGBA buffer
+            cvt_yuv2rgba(yuvBuffer_, rgbaBuffer_, BEF_AI_PIX_FMT_YUV420P, capturedFrame.width,
+                         capturedFrame.height, capturedFrame.width, capturedFrame.height,
+                         BEF_AI_CLOCKWISE_ROTATE_0,
+                         false);
+            prevFrame_ = capturedFrame;
+
+        }
+
+        void ByteDanceProcessor::processEffect(const agora::media::VideoFrame &capturedFrame) {
             if (!byteEffectHandler_) {
                 bef_effect_result_t ret;
                 ret = bef_effect_ai_create(&byteEffectHandler_);
-                CHECK_BEF_AI_RET_SUCCESS(ret, "ByteDanceProcessor::updateEffect create effect handle failed ! %d", ret);
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::updateEffect create effect handle failed ! %d",
+                                         ret);
 
-                void * context = AndroidContextHelper::getContext();
+                void *context = AndroidContextHelper::getContext();
                 ret = bef_effect_ai_check_license(
                         JniHelper::getJniHelper()->attachCurrentTnread(),
                         reinterpret_cast<jobject>(context), byteEffectHandler_,
                         licensePath_.c_str());
-                CHECK_BEF_AI_RET_SUCCESS(ret, "ByteDanceProcessor::updateEffect check license failed, %d path: %s", ret, licensePath_.c_str());
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::updateEffect check license failed, %d path: %s",
+                                         ret, licensePath_.c_str());
 
                 ret = bef_effect_ai_init(byteEffectHandler_, 0, 0, modelDir_.c_str(), "");
-                CHECK_BEF_AI_RET_SUCCESS(ret, "ByteDanceProcessor::updateEffect init effect handler failed, %d model path: %s", ret, modelDir_.c_str());
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::updateEffect init effect handler failed, %d model path: %s",
+                                         ret, modelDir_.c_str());
 
                 ret = bef_effect_ai_composer_set_mode(byteEffectHandler_, 1, 0);
-                CHECK_BEF_AI_RET_SUCCESS(ret, "ByteDanceProcessor::updateEffect set composer mode failed %d", ret);
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::updateEffect set composer mode failed %d",
+                                         ret);
             }
 
             if (aiEffectNeedUpdate_) {
                 bef_effect_result_t ret;
-                ret = bef_effect_ai_composer_set_nodes(byteEffectHandler_, (const char **)aiNodes_, aiNodeCount_);
-                CHECK_BEF_AI_RET_SUCCESS(ret, "ByteDanceProcessor::updateEffect composer set nodes failed ! %d", ret);
+                if (aiNodeCount_ <= 0) {
+                    const char *nodes[] = {};
+                    ret = bef_effect_ai_composer_set_nodes(byteEffectHandler_,
+                                                           nodes, 0);
+                    CHECK_BEF_AI_RET_SUCCESS(ret,
+                                             "ByteDanceProcessor::updateEffect composer set nodes to empty failed ! %d",
+                                             ret);
+                } else {
+                    ret = bef_effect_ai_composer_set_nodes(byteEffectHandler_,
+                                                           (const char **) aiNodes_, aiNodeCount_);
+                    CHECK_BEF_AI_RET_SUCCESS(ret,
+                                             "ByteDanceProcessor::updateEffect composer set nodes failed ! %d",
+                                             ret);
 
-                for (SizeType i = 0; i < aiNodeCount_; i++) {
-                    ret = bef_effect_ai_composer_update_node(byteEffectHandler_, aiNodes_[i], aiNodeKeys_[i].c_str(), aiNodeIntensities_[i]);
-                    CHECK_BEF_AI_RET_SUCCESS(ret, "ByteDanceProcessor::updateEffect update composer failed %d %s %s %f", ret, aiNodeKeys_[i].c_str(), aiNodes_[i], aiNodeIntensities_[i]);
+                    for (SizeType i = 0; i < aiNodeCount_; i++) {
+                        ret = bef_effect_ai_composer_update_node(byteEffectHandler_, aiNodes_[i],
+                                                                 aiNodeKeys_[i].c_str(),
+                                                                 aiNodeIntensities_[i]);
+                        CHECK_BEF_AI_RET_SUCCESS(ret,
+                                                 "ByteDanceProcessor::updateEffect update composer failed %d %s %s %f",
+                                                 ret, aiNodeKeys_[i].c_str(), aiNodes_[i],
+                                                 aiNodeIntensities_[i]);
+                    }
                 }
                 aiEffectNeedUpdate_ = false;
             }
-            if (aiEffectEnabled_ ) {
-                uint64_t timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                bef_effect_ai_set_width_height(byteEffectHandler_, capturedFrame.width, capturedFrame.height);
-                unsigned char* yuvBuffer = createYUVBuffer(capturedFrame);
-                unsigned char* rgbaBuffer = createRGBABuffer(capturedFrame);
-                cvt_yuv2rgba(yuvBuffer, rgbaBuffer, BEF_AI_PIX_FMT_YUV420P, capturedFrame.width, capturedFrame.height, capturedFrame.width, capturedFrame.height, BEF_AI_CLOCKWISE_ROTATE_0,
-                             false);
-                bef_effect_result_t ret;
-                ret = bef_effect_ai_algorithm_buffer(byteEffectHandler_, rgbaBuffer, BEF_AI_PIX_FMT_RGBA8888, capturedFrame.width, capturedFrame.height, capturedFrame.yStride * 4, timestamp);
-                CHECK_BEF_AI_RET_SUCCESS(ret, "ByteDanceProcessor::updateEffect ai algorithm buffer failed %d", ret);
-                ret = bef_effect_ai_process_buffer(byteEffectHandler_, rgbaBuffer, BEF_AI_PIX_FMT_RGBA8888, capturedFrame.yStride, capturedFrame.height, capturedFrame.yStride * 4, rgbaBuffer, BEF_AI_PIX_FMT_RGBA8888, timestamp);
-                CHECK_BEF_AI_RET_SUCCESS(ret, "ByteDanceProcessor::updateEffect ai process buffer failed %d", ret);
 
-                cvt_rgba2yuv(rgbaBuffer, yuvBuffer, BEF_AI_PIX_FMT_YUV420P, capturedFrame.yStride, capturedFrame.height);
+            uint64_t timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now().time_since_epoch()).count();
+            bef_effect_ai_set_width_height(byteEffectHandler_, capturedFrame.width,
+                                           capturedFrame.height);
 
-                int ysize = capturedFrame.yStride * capturedFrame.height;
-                int usize = capturedFrame.uStride * capturedFrame.height / 2;
-                int vsize = capturedFrame.vStride * capturedFrame.height / 2;
-                memcpy(capturedFrame.yBuffer, yuvBuffer, ysize);
-                memcpy(capturedFrame.uBuffer, yuvBuffer + ysize, usize);
-                memcpy(capturedFrame.vBuffer, yuvBuffer + ysize + usize, vsize);
-                free(rgbaBuffer);
-                free(yuvBuffer);
+            bef_effect_result_t ret;
+            ret = bef_effect_ai_algorithm_buffer(byteEffectHandler_, rgbaBuffer_,
+                                                 BEF_AI_PIX_FMT_RGBA8888, capturedFrame.width,
+                                                 capturedFrame.height, capturedFrame.yStride * 4,
+                                                 timestamp);
+            CHECK_BEF_AI_RET_SUCCESS(ret,
+                                     "ByteDanceProcessor::updateEffect ai algorithm buffer failed %d",
+                                     ret);
+            ret = bef_effect_ai_process_buffer(byteEffectHandler_, rgbaBuffer_,
+                                               BEF_AI_PIX_FMT_RGBA8888, capturedFrame.yStride,
+                                               capturedFrame.height, capturedFrame.yStride * 4,
+                                               rgbaBuffer_, BEF_AI_PIX_FMT_RGBA8888, timestamp);
+            CHECK_BEF_AI_RET_SUCCESS(ret,
+                                     "ByteDanceProcessor::updateEffect ai process buffer failed %d",
+                                     ret);
 
+            cvt_rgba2yuv(rgbaBuffer_, yuvBuffer_, BEF_AI_PIX_FMT_YUV420P, capturedFrame.yStride,
+                         capturedFrame.height);
+
+            int ysize = capturedFrame.yStride * capturedFrame.height;
+            int usize = capturedFrame.uStride * capturedFrame.height / 2;
+            int vsize = capturedFrame.vStride * capturedFrame.height / 2;
+            memcpy(capturedFrame.yBuffer, yuvBuffer_, ysize);
+            memcpy(capturedFrame.uBuffer, yuvBuffer_ + ysize, usize);
+            memcpy(capturedFrame.vBuffer, yuvBuffer_ + ysize + usize, vsize);
+        }
+
+        int ByteDanceProcessor::processFrame(const agora::media::VideoFrame &capturedFrame) {
+            const std::lock_guard<std::mutex> lock(mutex_);
+
+            if (aiEffectEnabled_ || faceAttributeEnabled_) {
+                prepareCachedVideoFrame(capturedFrame);
+            }
+
+            if (aiEffectEnabled_) {
+                processEffect(capturedFrame);
             }
 
             return 0;
@@ -141,6 +202,30 @@ namespace agora {
             aiNodeKeys_.clear();
             aiNodeCount_ = 0;
             aiEffectNeedUpdate_ = false;
+
+            if (yuvBuffer_) {
+                free(yuvBuffer_);
+                yuvBuffer_ = nullptr;
+            }
+            if (rgbaBuffer_) {
+                free(rgbaBuffer_);
+                rgbaBuffer_ = nullptr;
+            }
+            prevFrame_ = {
+                    media::VIDEO_PIXEL_I420,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    nullptr,
+                    nullptr,
+                    nullptr,
+                    0,
+                    0,
+                    0
+            };
+
             return 0;
         }
 
@@ -191,27 +276,30 @@ namespace agora {
                 aiNodeIntensities_.clear();
                 aiNodeKeys_.clear();
                 aiNodeCount_ = nodes.Size();
-                aiNodes_ = (char **)malloc(nodes.Size() * sizeof(char *));
-                for (SizeType i = 0; i < nodes.Size(); i++) {
-                    if (!nodes[i].IsObject()) {
-                        return -101;
-                    }
-                    Value& node = nodes[i];
+                if (aiNodeCount_ > 0) {
+                    aiNodes_ = (char **) malloc(nodes.Size() * sizeof(char *));
+                    for (SizeType i = 0; i < nodes.Size(); i++) {
+                        if (!nodes[i].IsObject()) {
+                            return -101;
+                        }
+                        Value &node = nodes[i];
 
-                    if (node.HasMember("path") && node.HasMember("key") && node.HasMember("intensity")) {
-                        Value& vPath = node["path"];
-                        Value& vKey = node["key"];
-                        Value& vIntensity = node["intensity"];
-                        const char* path = vPath.GetString();
-                        size_t strLength = strlen(path);
-                        aiNodes_[i] = (char *)malloc((strLength + 1) * sizeof(char *));
-                        strncpy(aiNodes_[i], path, strLength);
-                        aiNodes_[i][strLength] = '\0';
-                        aiNodeKeys_.push_back(vKey.GetString());
-                        aiNodeIntensities_.push_back(vIntensity.GetFloat());
-                    }
-                    else {
-                        PRINTF_ERROR("plugin.bytedance.ai.composer.nodes param error: idx %d", i);
+                        if (node.HasMember("path") && node.HasMember("key") &&
+                            node.HasMember("intensity")) {
+                            Value &vPath = node["path"];
+                            Value &vKey = node["key"];
+                            Value &vIntensity = node["intensity"];
+                            const char *path = vPath.GetString();
+                            size_t strLength = strlen(path);
+                            aiNodes_[i] = (char *) malloc((strLength + 1) * sizeof(char *));
+                            strncpy(aiNodes_[i], path, strLength);
+                            aiNodes_[i][strLength] = '\0';
+                            aiNodeKeys_.push_back(vKey.GetString());
+                            aiNodeIntensities_.push_back(vIntensity.GetFloat());
+                        } else {
+                            PRINTF_ERROR("plugin.bytedance.ai.composer.nodes param error: idx %d",
+                                         i);
+                        }
                     }
                 }
                 aiEffectNeedUpdate_ = true;

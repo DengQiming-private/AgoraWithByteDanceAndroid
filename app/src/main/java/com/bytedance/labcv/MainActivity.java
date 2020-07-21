@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -45,6 +46,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
     private RtcEngine mRtcEngine;
     private SurfaceView mRemoteView;
     private TextView logTextView;
+    private Button beautyButton;
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
@@ -82,6 +84,13 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
         localVideoContainer = findViewById(R.id.view_container);
         remoteVideoContainer = findViewById(R.id.remote_video_view_container);
         logTextView = findViewById(R.id.log_text_view);
+        beautyButton = findViewById(R.id.enable_beauty_button);
+        beautyButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                enableEffect();
+            }
+        });
     }
 
     private boolean checkSelfPermission(String permission, int requestCode) {
@@ -198,8 +207,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
         mRemoteView = null;
     }
 
-    private void initEffectEngine() {
-        AgoraByteDanceNative.setContext(this);
+    private void enableEffect() {
         JSONObject o = new JSONObject();
         try {
             o.put("plugin.bytedance.licensePath", ResourceHelper.getLicensePath(this));
@@ -216,15 +224,32 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             node2.put("key", "Internal_Makeup_Blusher");
             node2.put("intensity", 1.0);
 
+            JSONObject node3 = new JSONObject();
+            node3.put("path", ResourceHelper.getComposePath(this) + "reshape_camera");
+            node3.put("key", "Internal_Deform_Face");
+            node3.put("intensity", 1.0);
+
+//            JSONObject node4 = new JSONObject();
+//            node4.put("path", ResourceHelper.getComposePath(this) + "beauty_Android_live");
+//            node4.put("key", "whiten");
+//            node4.put("intensity", 1.0);
+
             JSONArray arr = new JSONArray();
             arr.put(node1);
             arr.put(node2);
+            arr.put(node3);
+//            arr.put(node4);
             o.put("plugin.bytedance.ai.composer.nodes", arr);
 
             AgoraByteDanceNative.setParameters(o.toString());
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    private void initEffectEngine() {
+        AgoraByteDanceNative.setContext(this);
+
     }
 
     @Override

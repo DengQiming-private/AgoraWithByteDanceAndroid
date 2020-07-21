@@ -70,9 +70,9 @@ typedef struct bef_ai_hand_st {
     float score;                      ///< 手部动作置信度
     float rot_angle_bothhand;  ///< 双手夹角
     // 手部关键点, 如果没有检测到，则置为0
-    struct bef_ai_tt_key_point key_points[BEF_HAND_KEY_POINT_NUM];
+    bef_ai_tt_key_point key_points[BEF_HAND_KEY_POINT_NUM];
     // 手部扩展点，如果没有检测到，则置为0
-    struct bef_ai_tt_key_point key_points_extension[BEF_HAND_KEY_POINT_NUM_EXTENSION];
+    bef_ai_tt_key_point key_points_extension[BEF_HAND_KEY_POINT_NUM_EXTENSION];
     unsigned int seq_action;   // 0 如果没有序列动作设置为0， 其他为有效值
     unsigned char *segment;         ///< 手掌分割mask 取值范围 0～255 默认: nullptr
     int segment_width;              ///< 手掌分割宽 默认: 0
@@ -96,7 +96,7 @@ typedef enum {
     BEF_HAND_ALGO_LOW_POWER_MODE = 6,         // 降级模式，默认走高级的版本。如果
     BEF_HAND_ALGO_AUTO_MODE = 7,              // 降级模式，默认走高级的版本。如果
     // 如果设置为 HAND_ALGO_AUTO_MODE 模式，则可以以下参数来设置算法降级的阈值
-    BEF_HAND_ALGO_TIME_ELAPSED_THRESHOLD = 8, // 算法耗时阈值，默认为 20ms
+            BEF_HAND_ALGO_TIME_ELAPSED_THRESHOLD = 8, // 算法耗时阈值，默认为 20ms
     BEF_HAND_ALGO_MAX_TEST_FRAME = 9,         // 设置运行时测试算法的执行的次数, 默认是 150 次
     BEF_HAND_IS_USE_DOUBLE_GESTURE = 10,      // 设置是否使用双手手势， 默认为true
     BEF_HNAD_ENLARGE_FACTOR_REG = 11,         // 设置回归模型的输入初始框的放大比列
@@ -122,9 +122,9 @@ typedef enum {
  */
 BEF_SDK_API bef_effect_result_t
 bef_effect_ai_hand_detect_create(
-                              bef_ai_hand_sdk_handle *handle,
-                              unsigned int config
-                              );
+        bef_ai_hand_sdk_handle *handle,
+        unsigned int config
+);
 
 /**
  * @brief 传入检测图片
@@ -148,17 +148,17 @@ bef_effect_ai_hand_detect_create(
  */
 BEF_SDK_API bef_effect_result_t
 bef_effect_ai_hand_detect(
-                       bef_ai_hand_sdk_handle handle,
-                       const unsigned char *image,
-                       bef_ai_pixel_format pixel_format,
-                       int image_width,
-                       int image_height,
-                       int image_stride,
-                       bef_ai_rotate_type orientation,
-                       unsigned long long detection_config,
-                       bef_ai_hand_info *p_hand_info,
-                       int delayframecount
-                       );
+        bef_ai_hand_sdk_handle handle,
+        const unsigned char *image,
+        bef_ai_pixel_format pixel_format,
+        int image_width,
+        int image_height,
+        int image_stride,
+        bef_ai_rotate_type orientation,
+        unsigned long long detection_config,
+        bef_ai_hand_info *p_hand_info,
+        int delayframecount
+);
 
 BEF_SDK_API bef_effect_result_t
 bef_effect_ai_hand_detect_setmodel(bef_effect_handle_t handle,
@@ -178,8 +178,8 @@ bef_effect_ai_hand_detect_setparam(bef_effect_handle_t handle,
  */
 BEF_SDK_API void
 bef_effect_ai_hand_detect_destroy(
-                            bef_ai_hand_sdk_handle handle
-                               );
+        bef_ai_hand_sdk_handle handle
+);
 
 
 /**
@@ -194,7 +194,7 @@ bef_effect_ai_hand_detect_destroy(
 
 #if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
 BEF_SDK_API bef_effect_result_t bef_effect_ai_hand_check_license(JNIEnv* env, jobject context,
-        bef_effect_handle_t handle, const char *licensePath);
+                                                                 bef_effect_handle_t handle, const char *licensePath);
 #else
 #ifdef __APPLE__
 BEF_SDK_API bef_effect_result_t bef_effect_ai_hand_check_license(bef_effect_handle_t handle,
