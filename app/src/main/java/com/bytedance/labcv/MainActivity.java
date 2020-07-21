@@ -213,6 +213,9 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             o.put("plugin.bytedance.licensePath", ResourceHelper.getLicensePath(this));
             o.put("plugin.bytedance.modelDir", ResourceHelper.getModelDir(this));
             o.put("plugin.bytedance.aiEffectEnabled", true);
+            o.put("plugin.bytedance.faceAttributeEnabled", true);
+            o.put("plugin.bytedance.faceDetectModelPath", ResourceHelper.getFaceModelPath(this));
+            o.put("plugin.bytedance.faceAttributeModelPath", ResourceHelper.getFaceAttriModelPath(this));
 
             JSONObject node1 = new JSONObject();
             node1.put("path", ResourceHelper.getComposePath(this) + "lip/fuguhong");
@@ -229,10 +232,6 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             node3.put("key", "Internal_Deform_Face");
             node3.put("intensity", 1.0);
 
-//            JSONObject node4 = new JSONObject();
-//            node4.put("path", ResourceHelper.getComposePath(this) + "beauty_Android_live");
-//            node4.put("key", "whiten");
-//            node4.put("intensity", 1.0);
 
             JSONArray arr = new JSONArray();
             arr.put(node1);

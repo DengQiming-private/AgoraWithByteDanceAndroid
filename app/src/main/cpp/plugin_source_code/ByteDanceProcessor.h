@@ -35,6 +35,7 @@ namespace agora {
         protected:
             ~ByteDanceProcessor() {}
         private:
+            void processFaceDetect();
             void processEffect(const agora::media::VideoFrame &capturedFrame);
             void prepareCachedVideoFrame(const agora::media::VideoFrame &capturedFrame);
 
@@ -53,6 +54,8 @@ namespace agora {
             bool aiEffectNeedUpdate_ = false;
 
             bool faceAttributeEnabled_ = false;
+            std::string faceDetectModelPath_;
+            std::string faceAttributeModelPath_;
             bef_effect_handle_t faceDetectHandler_ = nullptr;
             bef_effect_handle_t faceAttributesHandler_ = nullptr;
 

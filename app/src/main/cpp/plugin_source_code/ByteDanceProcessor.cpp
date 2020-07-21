@@ -83,7 +83,7 @@ namespace agora {
                 bef_effect_result_t ret;
                 ret = bef_effect_ai_create(&byteEffectHandler_);
                 CHECK_BEF_AI_RET_SUCCESS(ret,
-                                         "ByteDanceProcessor::updateEffect create effect handle failed ! %d",
+                                         "ByteDanceProcessor::processEffect create effect handle failed ! %d",
                                          ret);
 
                 void *context = AndroidContextHelper::getContext();
@@ -92,17 +92,17 @@ namespace agora {
                         reinterpret_cast<jobject>(context), byteEffectHandler_,
                         licensePath_.c_str());
                 CHECK_BEF_AI_RET_SUCCESS(ret,
-                                         "ByteDanceProcessor::updateEffect check license failed, %d path: %s",
+                                         "ByteDanceProcessor::processEffect check license failed, %d path: %s",
                                          ret, licensePath_.c_str());
 
                 ret = bef_effect_ai_init(byteEffectHandler_, 0, 0, modelDir_.c_str(), "");
                 CHECK_BEF_AI_RET_SUCCESS(ret,
-                                         "ByteDanceProcessor::updateEffect init effect handler failed, %d model path: %s",
+                                         "ByteDanceProcessor::processEffect init effect handler failed, %d model path: %s",
                                          ret, modelDir_.c_str());
 
                 ret = bef_effect_ai_composer_set_mode(byteEffectHandler_, 1, 0);
                 CHECK_BEF_AI_RET_SUCCESS(ret,
-                                         "ByteDanceProcessor::updateEffect set composer mode failed %d",
+                                         "ByteDanceProcessor::processEffect set composer mode failed %d",
                                          ret);
             }
 
@@ -113,13 +113,13 @@ namespace agora {
                     ret = bef_effect_ai_composer_set_nodes(byteEffectHandler_,
                                                            nodes, 0);
                     CHECK_BEF_AI_RET_SUCCESS(ret,
-                                             "ByteDanceProcessor::updateEffect composer set nodes to empty failed ! %d",
+                                             "ByteDanceProcessor::processEffect composer set nodes to empty failed ! %d",
                                              ret);
                 } else {
                     ret = bef_effect_ai_composer_set_nodes(byteEffectHandler_,
                                                            (const char **) aiNodes_, aiNodeCount_);
                     CHECK_BEF_AI_RET_SUCCESS(ret,
-                                             "ByteDanceProcessor::updateEffect composer set nodes failed ! %d",
+                                             "ByteDanceProcessor::processEffect composer set nodes failed ! %d",
                                              ret);
 
                     for (SizeType i = 0; i < aiNodeCount_; i++) {
@@ -127,7 +127,7 @@ namespace agora {
                                                                  aiNodeKeys_[i].c_str(),
                                                                  aiNodeIntensities_[i]);
                         CHECK_BEF_AI_RET_SUCCESS(ret,
-                                                 "ByteDanceProcessor::updateEffect update composer failed %d %s %s %f",
+                                                 "ByteDanceProcessor::processEffect update composer failed %d %s %s %f",
                                                  ret, aiNodeKeys_[i].c_str(), aiNodes_[i],
                                                  aiNodeIntensities_[i]);
                     }
@@ -167,11 +167,82 @@ namespace agora {
             memcpy(capturedFrame.vBuffer, yuvBuffer_ + ysize + usize, vsize);
         }
 
+        void ByteDanceProcessor::processFaceDetect() {
+            if (!faceDetectHandler_) {
+                bef_effect_result_t ret;
+                ret = bef_effect_ai_face_detect_create(
+                        BEF_DETECT_SMALL_MODEL | BEF_DETECT_FULL | BEF_DETECT_MODE_VIDEO,
+                        faceDetectModelPath_.c_str(), &faceDetectHandler_);
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::processFaceDetect create face detect handle failed ! %d",
+                                         ret);
+
+                void *context = AndroidContextHelper::getContext();
+                ret = bef_effect_ai_face_check_license(
+                        JniHelper::getJniHelper()->attachCurrentTnread(),
+                        reinterpret_cast<jobject>(context), faceDetectHandler_,
+                        licensePath_.c_str());
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::processFaceDetect check_license face detect failed ! %d",
+                                         ret);
+
+                ret = bef_effect_ai_face_detect_setparam(faceDetectHandler_,
+                                                         BEF_FACE_PARAM_FACE_DETECT_INTERVAL, 15);
+
+                ret = bef_effect_ai_face_detect_setparam(faceDetectHandler_,
+                                                         BEF_FACE_PARAM_MAX_FACE_NUM,
+                                                         BEF_MAX_FACE_NUM);
+            }
+            if (!faceAttributesHandler_) {
+                bef_effect_result_t ret;
+                ret = bef_effect_ai_face_attribute_create(0, faceAttributeModelPath_.c_str(),
+                                                          &faceAttributesHandler_);
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::processFaceDetect create face attribute handle failed ! %d",
+                                         ret);
+                void *context = AndroidContextHelper::getContext();
+                ret = bef_effect_ai_face_attribute_check_license(
+                        JniHelper::getJniHelper()->attachCurrentTnread(),
+                        reinterpret_cast<jobject>(context), faceAttributesHandler_,
+                        licensePath_.c_str());
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::processFaceDetect check_license face attribute failed ! %d",
+                                         ret);
+            }
+
+            bef_ai_face_info faceInfo;
+            memset(&faceInfo, 0, sizeof(bef_ai_face_info));
+            bef_effect_result_t ret;
+            ret = bef_effect_ai_face_detect(faceDetectHandler_, rgbaBuffer_, BEF_AI_PIX_FMT_RGBA8888, prevFrame_.yStride, prevFrame_.height, prevFrame_.yStride * 4, BEF_AI_CLOCKWISE_ROTATE_0, BEF_DETECT_MODE_VIDEO | BEF_DETECT_FULL, &faceInfo);
+            CHECK_BEF_AI_RET_SUCCESS(ret, "ByteDanceProcessor::processFaceDetect face info detect failed ! %d", ret);
+            if (faceInfo.face_count != 0) {
+                unsigned long long attriConfig =
+                        BEF_FACE_ATTRIBUTE_AGE | BEF_FACE_ATTRIBUTE_HAPPINESS |
+                        BEF_FACE_ATTRIBUTE_EXPRESSION | BEF_FACE_ATTRIBUTE_GENDER
+                        | BEF_FACE_ATTRIBUTE_RACIAL | BEF_FACE_ATTRIBUTE_ATTRACTIVE;
+                bef_ai_face_attribute_result attributeResult;
+                ret = bef_effect_ai_face_attribute_detect_batch(faceAttributesHandler_, rgbaBuffer_,
+                                                                BEF_AI_PIX_FMT_RGBA8888,
+                                                                prevFrame_.yStride,
+                                                                prevFrame_.height,
+                                                                prevFrame_.yStride * 4,
+                                                                faceInfo.base_infos,
+                                                                faceInfo.face_count, attriConfig,
+                                                                &attributeResult);
+                CHECK_BEF_AI_RET_SUCCESS(ret, "face attribute detect failed ! %d", ret);
+            }
+        }
+
+
         int ByteDanceProcessor::processFrame(const agora::media::VideoFrame &capturedFrame) {
             const std::lock_guard<std::mutex> lock(mutex_);
 
             if (aiEffectEnabled_ || faceAttributeEnabled_) {
                 prepareCachedVideoFrame(capturedFrame);
+            }
+
+            if (faceAttributeEnabled_) {
+                processFaceDetect();
             }
 
             if (aiEffectEnabled_) {
@@ -225,6 +296,18 @@ namespace agora {
                     0,
                     0
             };
+
+            faceAttributeEnabled_ = false;
+            faceDetectModelPath_.clear();
+            faceAttributeModelPath_.clear();
+            if (faceDetectHandler_) {
+                bef_effect_ai_face_detect_destroy(faceDetectHandler_);
+                faceDetectHandler_ = nullptr;
+            }
+            if (faceAttributesHandler_) {
+                bef_effect_ai_face_attribute_destroy(faceAttributesHandler_);
+                faceAttributesHandler_ = nullptr;
+            }
 
             return 0;
         }
@@ -305,6 +388,29 @@ namespace agora {
                 aiEffectNeedUpdate_ = true;
             }
 
+            if (d.HasMember("plugin.bytedance.faceAttributeEnabled")) {
+                Value& enabled = d["plugin.bytedance.faceAttributeEnabled"];
+                if (!enabled.IsBool()) {
+                    return -101;
+                }
+                faceAttributeEnabled_ = enabled.GetBool();
+            }
+
+            if (d.HasMember("plugin.bytedance.faceDetectModelPath")) {
+                Value& faceDetectModelPath = d["plugin.bytedance.faceDetectModelPath"];
+                if (!faceDetectModelPath.IsString()) {
+                    return -101;
+                }
+                faceDetectModelPath_ = std::string(faceDetectModelPath.GetString());
+            }
+
+            if (d.HasMember("plugin.bytedance.faceAttributeModelPath")) {
+                Value& attributeModelPath = d["plugin.bytedance.faceAttributeModelPath"];
+                if (!attributeModelPath.IsString()) {
+                    return -101;
+                }
+                faceAttributeModelPath_ = std::string(attributeModelPath.GetString());
+            }
             return 0;
         }
 
