@@ -141,6 +141,18 @@ namespace agora {
                                            capturedFrame.height);
 
             bef_effect_result_t ret;
+            if (faceStickerEnabled_) {
+                ret = bef_effect_ai_set_effect(byteEffectHandler_, faceStickerItemPath_.c_str());
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::updateEffect set sticker effect failed %d",
+                                         ret);
+            } else {
+                ret = bef_effect_ai_set_effect(byteEffectHandler_, "");
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::updateEffect clear sticker effect failed %d",
+                                         ret);
+            }
+
             ret = bef_effect_ai_algorithm_buffer(byteEffectHandler_, rgbaBuffer_,
                                                  BEF_AI_PIX_FMT_RGBA8888, capturedFrame.width,
                                                  capturedFrame.height, capturedFrame.yStride * 4,
@@ -273,6 +285,9 @@ namespace agora {
             aiNodeKeys_.clear();
             aiNodeCount_ = 0;
             aiEffectNeedUpdate_ = false;
+
+            faceStickerEnabled_ = false;
+            faceStickerItemPath_.clear();
 
             if (yuvBuffer_) {
                 free(yuvBuffer_);
@@ -411,6 +426,23 @@ namespace agora {
                 }
                 faceAttributeModelPath_ = std::string(attributeModelPath.GetString());
             }
+
+            if (d.HasMember("plugin.bytedance.faceStickerEnabled")) {
+                Value& enabled = d["plugin.bytedance.faceStickerEnabled"];
+                if (!enabled.IsBool()) {
+                    return -101;
+                }
+                faceStickerEnabled_ = enabled.GetBool();
+            }
+
+            if (d.HasMember("plugin.bytedance.faceStickerItemResourcePath")) {
+                Value& path = d["plugin.bytedance.faceStickerItemResourcePath"];
+                if (!path.IsString()) {
+                    return -101;
+                }
+                faceStickerItemPath_ = std::string(path.GetString());
+            }
+
             return 0;
         }
 

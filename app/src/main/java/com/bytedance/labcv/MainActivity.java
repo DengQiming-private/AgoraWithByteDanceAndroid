@@ -216,6 +216,8 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             o.put("plugin.bytedance.faceAttributeEnabled", true);
             o.put("plugin.bytedance.faceDetectModelPath", ResourceHelper.getFaceModelPath(this));
             o.put("plugin.bytedance.faceAttributeModelPath", ResourceHelper.getFaceAttriModelPath(this));
+            o.put("plugin.bytedance.faceStickerEnabled", true);
+            o.put("plugin.bytedance.faceStickerItemResourcePath", ResourceHelper.getStickerPath(this, "leisituer"));
 
             JSONObject node1 = new JSONObject();
             node1.put("path", ResourceHelper.getComposePath(this) + "lip/fuguhong");

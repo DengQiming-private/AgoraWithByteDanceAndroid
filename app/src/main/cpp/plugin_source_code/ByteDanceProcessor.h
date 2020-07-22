@@ -76,6 +76,9 @@ namespace agora {
             unsigned char* yuvBuffer_ = nullptr;
             unsigned char* rgbaBuffer_ = nullptr;
 
+            bool faceStickerEnabled_ = false;
+            std::string faceStickerItemPath_;
+
         };
     }
 }
