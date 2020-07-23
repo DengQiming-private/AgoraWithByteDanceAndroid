@@ -43,7 +43,6 @@ namespace agora {
         JNIEnv *JniHelper::attachCurrentTnread() {
             JNIEnv *env = nullptr;
             int status = javaVm->GetEnv((void **) &env, JNI_VERSION_1_6);
-            bool isAttached = false;
             if (status == JNI_EDETACHED) {
                 status = javaVm->AttachCurrentThread(&env, nullptr);
                 if (status != 0) {

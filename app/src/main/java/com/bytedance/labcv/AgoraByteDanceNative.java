@@ -1,6 +1,9 @@
 package com.bytedance.labcv;
 
 import android.content.Context;
+import android.util.Log;
+
+import androidx.annotation.Keep;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,6 +14,7 @@ public class AgoraByteDanceNative {
     public static native int releaseContext();
     public static native boolean isEnable();
     public static native int setEnable(boolean enable);
+    public static AgoraByteDanceDataReceiver dataReceiver;
 
     public static void copyResource(Context context) {
         String path = "resource";
@@ -22,5 +26,14 @@ public class AgoraByteDanceNative {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Keep
+    public static void onDataCallback(String data) {
+
+        if (dataReceiver != null) {
+            dataReceiver.onDataReceive(data);
+        }
+        Log.i("Agora_zt", data);
     }
 }

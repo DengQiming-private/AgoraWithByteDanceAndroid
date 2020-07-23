@@ -30,7 +30,7 @@ import io.agora.rtc2.internal.RtcEngineImpl;
 import io.agora.rtc2.video.VideoCanvas;
 
 
-public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.OnUtilsAsyncTaskEvents{
+public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.OnUtilsAsyncTaskEvents, AgoraByteDanceDataReceiver{
 
     private static final String[] REQUESTED_PERMISSIONS = {
             Manifest.permission.RECORD_AUDIO,
@@ -68,7 +68,13 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             logTextView.setText("Resource is ready");
             initEffectEngine();
         }
+        AgoraByteDanceNative.dataReceiver = this;
+    }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        AgoraByteDanceNative.dataReceiver = null;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -213,11 +219,22 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             o.put("plugin.bytedance.licensePath", ResourceHelper.getLicensePath(this));
             o.put("plugin.bytedance.modelDir", ResourceHelper.getModelDir(this));
             o.put("plugin.bytedance.aiEffectEnabled", true);
+
             o.put("plugin.bytedance.faceAttributeEnabled", true);
             o.put("plugin.bytedance.faceDetectModelPath", ResourceHelper.getFaceModelPath(this));
             o.put("plugin.bytedance.faceAttributeModelPath", ResourceHelper.getFaceAttriModelPath(this));
+
             o.put("plugin.bytedance.faceStickerEnabled", true);
             o.put("plugin.bytedance.faceStickerItemResourcePath", ResourceHelper.getStickerPath(this, "leisituer"));
+
+            o.put("plugin.bytedance.handDetectEnabled", true);
+            o.put("plugin.bytedance.handDetectModelPath", ResourceHelper.getHandModelPath(this, ResourceHelper.DetectParamFile));
+            o.put("plugin.bytedance.handBoxModelPath", ResourceHelper.getHandModelPath(this, ResourceHelper.BoxRegParamFile));
+            o.put("plugin.bytedance.handGestureModelPath", ResourceHelper.getHandModelPath(this, ResourceHelper.GestureParamFile));
+            o.put("plugin.bytedance.handKPModelPath", ResourceHelper.getHandModelPath(this, ResourceHelper.KeyPointParamFile));
+
+            o.put("plugin.bytedance.lightDetectEnabled", true);
+            o.put("plugin.bytedance.lightDetectModelPath", ResourceHelper.getLightClsModelPath(this));
 
             JSONObject node1 = new JSONObject();
             node1.put("path", ResourceHelper.getComposePath(this) + "lip/fuguhong");
@@ -264,5 +281,10 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
         Toast.makeText(this, "copy resource Ready", Toast.LENGTH_LONG).show();
         logTextView.setText("Resource is ready");
         initEffectEngine();
+    }
+
+    @Override
+    public void onDataReceive(String data) {
+
     }
 }

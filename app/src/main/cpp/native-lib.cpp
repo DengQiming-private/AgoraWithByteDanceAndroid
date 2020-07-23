@@ -23,10 +23,16 @@ static PluginManager* pluginManager = NULL;
 
 JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     PRINTF_INFO("JNI_OnLoad");
-    JniHelper::createJniHelper(vm);
+    JniHelper* jniHelper = JniHelper::createJniHelper(vm);
+
+    JNIEnv *env;
+    int status = vm->GetEnv((void**)&env, JNI_VERSION_1_6);
+
+    jclass clz = env->FindClass("com/bytedance/labcv/AgoraByteDanceNative");
+    jniHelper->agoraByteDanceNativeClz = reinterpret_cast<jclass>(env->NewGlobalRef(clz));
     pluginManager = new PluginManager();
     pluginManager->loadPlugin();
-    return 0;
+    return JNI_VERSION_1_6;
 }
 
 JNIEXPORT void JNI_OnUnload(JavaVM* vm, void* reserved) {
@@ -100,4 +106,17 @@ Java_com_bytedance_labcv_AgoraByteDanceNative_releaseContext(
         jclass clazz) {
     AndroidContextHelper::releaseContext(env);
     return ERROR_CODE::ERROR_OK;
+}
+
+void dataCallback(std::string data) {
+    JniHelper * jniHelper = JniHelper::getJniHelper();
+    JNIEnv* env = jniHelper->attachCurrentTnread();
+    if (env != nullptr) {
+//        jclass clz = env->FindClass("com/bytedance/labcv/AgoraByteDanceNative");
+        jmethodID onDataCallbackFunc = env->GetStaticMethodID(jniHelper->agoraByteDanceNativeClz, "onDataCallback", "(Ljava/lang/String;)V");
+        jstring javaMsg = env->NewStringUTF(data.c_str());
+        env->CallStaticVoidMethod(jniHelper->agoraByteDanceNativeClz, onDataCallbackFunc, javaMsg);
+        env->DeleteLocalRef(javaMsg);
+    }
+
 }

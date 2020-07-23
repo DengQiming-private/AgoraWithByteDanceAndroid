@@ -18,6 +18,7 @@ namespace agora {
 
         public:
             bool isAttached = false;
+            jclass agoraByteDanceNativeClz;
 
             ~JniHelper();
 
@@ -32,6 +33,8 @@ namespace agora {
             JNIEnv *attachCurrentTnread();
 
             void detachCurrentThread();
+
+
         };
 
         class AndroidContextHelper {

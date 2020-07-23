@@ -9,13 +9,17 @@
 #include "JniHelper.h"
 #include "../logutils.h"
 #include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
+
 #include "../bytedance/bef_effect_ai_yuv_process.h"
+#include "error_code.h"
 
 #define CHECK_BEF_AI_RET_SUCCESS(ret, ...) \
 if(ret != 0){\
     PRINTF_ERROR(__VA_ARGS__);\
 }
-
+void dataCallback(std::string data);
 namespace agora {
     namespace extension {
         using namespace rapidjson;
@@ -227,12 +231,13 @@ namespace agora {
             bef_effect_result_t ret;
             ret = bef_effect_ai_face_detect(faceDetectHandler_, rgbaBuffer_, BEF_AI_PIX_FMT_RGBA8888, prevFrame_.yStride, prevFrame_.height, prevFrame_.yStride * 4, BEF_AI_CLOCKWISE_ROTATE_0, BEF_DETECT_MODE_VIDEO | BEF_DETECT_FULL, &faceInfo);
             CHECK_BEF_AI_RET_SUCCESS(ret, "ByteDanceProcessor::processFaceDetect face info detect failed ! %d", ret);
-            if (faceInfo.face_count != 0) {
+            bef_ai_face_attribute_result attributeResult;
+            if (faceInfo.face_count > 0) {
                 unsigned long long attriConfig =
                         BEF_FACE_ATTRIBUTE_AGE | BEF_FACE_ATTRIBUTE_HAPPINESS |
                         BEF_FACE_ATTRIBUTE_EXPRESSION | BEF_FACE_ATTRIBUTE_GENDER
                         | BEF_FACE_ATTRIBUTE_RACIAL | BEF_FACE_ATTRIBUTE_ATTRACTIVE;
-                bef_ai_face_attribute_result attributeResult;
+
                 ret = bef_effect_ai_face_attribute_detect_batch(faceAttributesHandler_, rgbaBuffer_,
                                                                 BEF_AI_PIX_FMT_RGBA8888,
                                                                 prevFrame_.yStride,
@@ -243,8 +248,165 @@ namespace agora {
                                                                 &attributeResult);
                 CHECK_BEF_AI_RET_SUCCESS(ret, "face attribute detect failed ! %d", ret);
             }
+            rapidjson::StringBuffer strBuf;
+            rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+            writer.SetMaxDecimalPlaces(3);
+            writer.StartObject();
+            writer.Key("plugin.bytedance.face.info");
+            writer.StartArray();
+            for (int i = 0; i < faceInfo.face_count; ++i) {
+                writer.StartObject();
+                writer.Key("yaw");
+                writer.Double(faceInfo.base_infos[i].yaw);
+                writer.Key("roll");
+                writer.Double(faceInfo.base_infos[i].roll);
+                writer.Key("pitch");
+                writer.Double(faceInfo.base_infos[i].pitch);
+                writer.Key("action");
+                writer.Int(faceInfo.base_infos[i].action);
+                writer.Key("expression");
+                writer.Int((int)attributeResult.attr_info[i].exp_type);
+                writer.Key("confused_prob");
+                writer.Double(attributeResult.attr_info[i].confused_prob);
+                writer.EndObject();
+            }
+            writer.EndArray();
+            writer.EndObject();
+            const char* text = strBuf.GetString();
+            dataCallback(text);
         }
 
+        void ByteDanceProcessor::processHandDetect() {
+            if (!handDetectHandler_) {
+                bef_effect_result_t ret;
+
+                ret = bef_effect_ai_hand_detect_create(&handDetectHandler_, 0);
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::processHandDetect create hand detect handle failed ! %d",
+                                         ret);
+
+                void *context = AndroidContextHelper::getContext();
+                ret = bef_effect_ai_hand_check_license(
+                        JniHelper::getJniHelper()->attachCurrentTnread(),
+                        reinterpret_cast<jobject>(context), handDetectHandler_,
+                        licensePath_.c_str());
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::processHandDetect check_license hand detect failed ! %d",
+                                         ret);
+
+                ret = bef_effect_ai_hand_detect_setmodel(handDetectHandler_,
+                                                         BEF_AI_HAND_MODEL_DETECT,
+                                                         handDetectModelPath_.c_str());
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::processHandDetect set hand detect model failed !");
+
+                ret = bef_effect_ai_hand_detect_setmodel(handDetectHandler_,
+                                                         BEF_AI_HAND_MODEL_BOX_REG,
+                                                         handBoxModelPath_.c_str());
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::processHandDetect set hand box model failed !");
+
+                ret = bef_effect_ai_hand_detect_setmodel(handDetectHandler_,
+                                                         BEF_AI_HAND_MODEL_GESTURE_CLS,
+                                                         handGestureModelPath_.c_str());
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::processHandDetect set hand gesture model failed !");
+
+                ret = bef_effect_ai_hand_detect_setmodel(handDetectHandler_,
+                                                         BEF_AI_HAND_MODEL_KEY_POINT,
+                                                         handKPModelPath_.c_str());
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::processHandDetect set hand key points model failed !");
+
+                ret = bef_effect_ai_hand_detect_setparam(handDetectHandler_, BEF_HAND_MAX_HAND_NUM,
+                                                         2);
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::processHandDetect set max hand num failed !");
+                ret = bef_effect_ai_hand_detect_setparam(handDetectHandler_,
+                                                         BEF_HNAD_ENLARGE_FACTOR_REG, 2.0);
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::processHandDetect set hand enlarge factor failed !");
+            }
+
+            bef_ai_hand_info handInfo;
+            bef_effect_result_t ret;
+            ret = bef_effect_ai_hand_detect(handDetectHandler_, rgbaBuffer_,
+                                            BEF_AI_PIX_FMT_RGBA8888, prevFrame_.yStride,
+                                            prevFrame_.height, prevFrame_.yStride * 4,
+                                            BEF_AI_CLOCKWISE_ROTATE_0,
+                                            BEF_AI_HAND_MODEL_DETECT | BEF_AI_HAND_MODEL_BOX_REG |
+                                            BEF_AI_HAND_MODEL_GESTURE_CLS |
+                                            BEF_AI_HAND_MODEL_KEY_POINT, &handInfo, 0);
+            CHECK_BEF_AI_RET_SUCCESS(ret, "hand detect failed ! %d", ret);
+
+            rapidjson::StringBuffer strBuf;
+            rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+            writer.SetMaxDecimalPlaces(3);
+            writer.StartObject();
+            writer.Key("plugin.bytedance.hand.info");
+
+            writer.StartArray();
+            for (int i = 0; i < handInfo.hand_count; i++) {
+                bef_ai_hand hand = handInfo.p_hands[i];
+                writer.StartObject();
+                writer.Key("action");
+                writer.Int(hand.action);
+
+                writer.Key("seq_action");
+                writer.Double(hand.seq_action);
+                writer.EndObject();
+            }
+
+            writer.EndArray();
+
+            writer.EndObject();
+            const char* text = strBuf.GetString();
+            dataCallback(text);
+
+        }
+
+        void ByteDanceProcessor::processLightDetect() {
+            if (!lightDetectHandler_) {
+                bef_effect_result_t ret;
+
+                ret = bef_effect_ai_lightcls_create(&lightDetectHandler_,
+                                                    lightDetectModelPath_.c_str(), 5);
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::processLightDetect create face detect handle failed ! %d",
+                                         ret);
+
+                void *context = AndroidContextHelper::getContext();
+                ret = bef_effect_ai_lightcls_check_license(
+                        JniHelper::getJniHelper()->attachCurrentTnread(),
+                        reinterpret_cast<jobject>(context), lightDetectHandler_,
+                        licensePath_.c_str());
+                CHECK_BEF_AI_RET_SUCCESS(ret,
+                                         "ByteDanceProcessor::processLightDetect check_license light detect failed ! %d",
+                                         ret);
+            }
+
+            bef_effect_result_t ret;
+            bef_ai_light_cls_result lightInfo;
+            ret = bef_effect_ai_lightcls_detect(lightDetectHandler_, rgbaBuffer_,
+                                                BEF_AI_PIX_FMT_RGBA8888, prevFrame_.yStride,
+                                                prevFrame_.height, prevFrame_.yStride * 4,
+                                                BEF_AI_CLOCKWISE_ROTATE_0, &lightInfo);
+            CHECK_BEF_AI_RET_SUCCESS(ret, "light detect failed ! %d", ret);
+            rapidjson::StringBuffer strBuf;
+            rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+            writer.SetMaxDecimalPlaces(3);
+            writer.StartObject();
+            writer.Key("plugin.bytedance.light.info");
+            writer.StartObject();
+            writer.Key("selected_index");
+            writer.Int(lightInfo.selected_index);
+            writer.Key("prob");
+            writer.Double(lightInfo.prob);
+            writer.EndObject();
+            writer.EndObject();
+            const char* text = strBuf.GetString();
+            dataCallback(text);
+        }
 
         int ByteDanceProcessor::processFrame(const agora::media::VideoFrame &capturedFrame) {
             const std::lock_guard<std::mutex> lock(mutex_);
@@ -255,6 +417,14 @@ namespace agora {
 
             if (faceAttributeEnabled_) {
                 processFaceDetect();
+            }
+
+            if (handDetectEnabled_) {
+                processHandDetect();
+            }
+
+            if (lightDetectEnabled_) {
+                processLightDetect();
             }
 
             if (aiEffectEnabled_) {
@@ -324,6 +494,21 @@ namespace agora {
                 faceAttributesHandler_ = nullptr;
             }
 
+            handDetectEnabled_ = false;
+            handDetectModelPath_.clear();
+            handBoxModelPath_.clear();
+            handGestureModelPath_.clear();
+            handKPModelPath_.clear();
+            if (handDetectHandler_) {
+                bef_effect_ai_hand_detect_destroy(handDetectHandler_);
+            }
+
+            lightDetectEnabled_ = false;
+            lightDetectModelPath_.clear();
+            if (lightDetectHandler_) {
+                bef_effect_ai_lightcls_release(lightDetectHandler_);
+            }
+
             return 0;
         }
 
@@ -332,13 +517,13 @@ namespace agora {
             Document d;
             d.Parse(parameter.c_str());
             if (d.HasParseError()) {
-                return -100;
+                return -ERROR_INVALID_JSON;
             }
 
             if (d.HasMember("plugin.bytedance.licensePath")) {
                 Value& licensePath = d["plugin.bytedance.licensePath"];
                 if (!licensePath.IsString()) {
-                    return -101;
+                    return -ERROR_INVALID_JSON_TYPE;
                 }
                 licensePath_ = std::string(licensePath.GetString());
             }
@@ -346,7 +531,7 @@ namespace agora {
             if (d.HasMember("plugin.bytedance.modelDir")) {
                 Value& modelDir = d["plugin.bytedance.modelDir"];
                 if (!modelDir.IsString()) {
-                    return -101;
+                    return -ERROR_INVALID_JSON_TYPE;
                 }
                 modelDir_ = std::string(modelDir.GetString());
             }
@@ -354,7 +539,7 @@ namespace agora {
             if (d.HasMember("plugin.bytedance.aiEffectEnabled")) {
                 Value& enabled = d["plugin.bytedance.aiEffectEnabled"];
                 if (!enabled.IsBool()) {
-                    return -101;
+                    return -ERROR_INVALID_JSON_TYPE;
                 }
                 aiEffectEnabled_ = enabled.GetBool();
             }
@@ -362,7 +547,7 @@ namespace agora {
             if (d.HasMember("plugin.bytedance.ai.composer.nodes")) {
                 Value& nodes = d["plugin.bytedance.ai.composer.nodes"];
                 if (!nodes.IsArray()) {
-                    return -101;
+                    return -ERROR_INVALID_JSON_TYPE;
                 }
 
                 if (aiNodes_) {
@@ -378,7 +563,7 @@ namespace agora {
                     aiNodes_ = (char **) malloc(nodes.Size() * sizeof(char *));
                     for (SizeType i = 0; i < nodes.Size(); i++) {
                         if (!nodes[i].IsObject()) {
-                            return -101;
+                            return -ERROR_INVALID_JSON_TYPE;
                         }
                         Value &node = nodes[i];
 
@@ -406,7 +591,7 @@ namespace agora {
             if (d.HasMember("plugin.bytedance.faceAttributeEnabled")) {
                 Value& enabled = d["plugin.bytedance.faceAttributeEnabled"];
                 if (!enabled.IsBool()) {
-                    return -101;
+                    return -ERROR_INVALID_JSON_TYPE;
                 }
                 faceAttributeEnabled_ = enabled.GetBool();
             }
@@ -414,7 +599,7 @@ namespace agora {
             if (d.HasMember("plugin.bytedance.faceDetectModelPath")) {
                 Value& faceDetectModelPath = d["plugin.bytedance.faceDetectModelPath"];
                 if (!faceDetectModelPath.IsString()) {
-                    return -101;
+                    return -ERROR_INVALID_JSON_TYPE;
                 }
                 faceDetectModelPath_ = std::string(faceDetectModelPath.GetString());
             }
@@ -422,7 +607,7 @@ namespace agora {
             if (d.HasMember("plugin.bytedance.faceAttributeModelPath")) {
                 Value& attributeModelPath = d["plugin.bytedance.faceAttributeModelPath"];
                 if (!attributeModelPath.IsString()) {
-                    return -101;
+                    return -ERROR_INVALID_JSON_TYPE;
                 }
                 faceAttributeModelPath_ = std::string(attributeModelPath.GetString());
             }
@@ -430,7 +615,7 @@ namespace agora {
             if (d.HasMember("plugin.bytedance.faceStickerEnabled")) {
                 Value& enabled = d["plugin.bytedance.faceStickerEnabled"];
                 if (!enabled.IsBool()) {
-                    return -101;
+                    return -ERROR_INVALID_JSON_TYPE;
                 }
                 faceStickerEnabled_ = enabled.GetBool();
             }
@@ -438,9 +623,65 @@ namespace agora {
             if (d.HasMember("plugin.bytedance.faceStickerItemResourcePath")) {
                 Value& path = d["plugin.bytedance.faceStickerItemResourcePath"];
                 if (!path.IsString()) {
-                    return -101;
+                    return -ERROR_INVALID_JSON_TYPE;
                 }
                 faceStickerItemPath_ = std::string(path.GetString());
+            }
+
+            if (d.HasMember("plugin.bytedance.handDetectEnabled")) {
+                Value& enabled = d["plugin.bytedance.handDetectEnabled"];
+                if (!enabled.IsBool()) {
+                    return -ERROR_INVALID_JSON_TYPE;
+                }
+                handDetectEnabled_ = enabled.GetBool();
+            }
+
+            if (d.HasMember("plugin.bytedance.handDetectModelPath")) {
+                Value& path = d["plugin.bytedance.handDetectModelPath"];
+                if (!path.IsString()) {
+                    return -ERROR_INVALID_JSON_TYPE;
+                }
+                handDetectModelPath_ = std::string(path.GetString());
+            }
+
+            if (d.HasMember("plugin.bytedance.handBoxModelPath")) {
+                Value& path = d["plugin.bytedance.handBoxModelPath"];
+                if (!path.IsString()) {
+                    return -ERROR_INVALID_JSON_TYPE;
+                }
+                handBoxModelPath_ = std::string(path.GetString());
+            }
+
+            if (d.HasMember("plugin.bytedance.handGestureModelPath")) {
+                Value& path = d["plugin.bytedance.handGestureModelPath"];
+                if (!path.IsString()) {
+                    return -ERROR_INVALID_JSON_TYPE;
+                }
+                handGestureModelPath_ = std::string(path.GetString());
+            }
+
+            if (d.HasMember("plugin.bytedance.handKPModelPath")) {
+                Value& path = d["plugin.bytedance.handKPModelPath"];
+                if (!path.IsString()) {
+                    return -ERROR_INVALID_JSON_TYPE;
+                }
+                handKPModelPath_ = std::string(path.GetString());
+            }
+
+            if (d.HasMember("plugin.bytedance.lightDetectEnabled")) {
+                Value& enabled = d["plugin.bytedance.lightDetectEnabled"];
+                if (!enabled.IsBool()) {
+                    return -ERROR_INVALID_JSON_TYPE;
+                }
+                lightDetectEnabled_ = enabled.GetBool();
+            }
+
+            if (d.HasMember("plugin.bytedance.lightDetectModelPath")) {
+                Value& path = d["plugin.bytedance.lightDetectModelPath"];
+                if (!path.IsString()) {
+                    return -ERROR_INVALID_JSON_TYPE;
+                }
+                lightDetectModelPath_ = std::string(path.GetString());
             }
 
             return 0;
