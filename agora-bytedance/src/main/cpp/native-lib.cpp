@@ -28,7 +28,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     JNIEnv *env;
     int status = vm->GetEnv((void**)&env, JNI_VERSION_1_6);
 
-    jclass clz = env->FindClass("com/bytedance/labcv/AgoraByteDanceNative");
+    jclass clz = env->FindClass("io/agora/extension/AgoraByteDanceNative");
     jniHelper->agoraByteDanceNativeClz = reinterpret_cast<jclass>(env->NewGlobalRef(clz));
     pluginManager = new PluginManager();
     pluginManager->loadPlugin();
@@ -46,7 +46,7 @@ JNIEXPORT void JNI_OnUnload(JavaVM* vm, void* reserved) {
     JniHelper::release();
 }
 
-extern "C" JNIEXPORT int JNICALL Java_com_bytedance_labcv_AgoraByteDanceNative_setParameters(
+extern "C" JNIEXPORT int JNICALL Java_io_agora_extension_AgoraByteDanceNative_setParameters(
         JNIEnv* env,
         jclass clazz, jstring parameters) {
     CHECK_PLUGIN_MANAGER_INT;
@@ -58,7 +58,7 @@ extern "C" JNIEXPORT int JNICALL Java_com_bytedance_labcv_AgoraByteDanceNative_s
 }
 
 extern "C" JNIEXPORT int JNICALL
-Java_com_bytedance_labcv_AgoraByteDanceNative_setContext(
+Java_io_agora_extension_AgoraByteDanceNative_setContext(
         JNIEnv* env,
         jclass clazz, jobject context) {
     CHECK_PLUGIN_MANAGER_INT;
@@ -84,7 +84,7 @@ Java_com_bytedance_labcv_AgoraByteDanceNative_setContext(
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_bytedance_labcv_AgoraByteDanceNative_isEnable(
+Java_io_agora_extension_AgoraByteDanceNative_isEnable(
         JNIEnv* env,
         jclass clazz) {
     CHECK_PLUGIN_MANAGER_INT;
@@ -92,7 +92,7 @@ Java_com_bytedance_labcv_AgoraByteDanceNative_isEnable(
 }
 
 extern "C" JNIEXPORT int JNICALL
-Java_com_bytedance_labcv_AgoraByteDanceNative_setEnable(
+Java_io_agora_extension_AgoraByteDanceNative_setEnable(
         JNIEnv* env,
         jclass clazz, jboolean enable) {
     CHECK_PLUGIN_MANAGER_INT;
@@ -101,7 +101,7 @@ Java_com_bytedance_labcv_AgoraByteDanceNative_setEnable(
 }
 
 extern "C" JNIEXPORT int JNICALL
-Java_com_bytedance_labcv_AgoraByteDanceNative_releaseContext(
+Java_io_agora_extension_AgoraByteDanceNative_releaseContext(
         JNIEnv* env,
         jclass clazz) {
     AndroidContextHelper::releaseContext(env);

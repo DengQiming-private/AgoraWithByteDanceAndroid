@@ -1,5 +1,5 @@
 // Copyright (C) 2018 Beijing Bytedance Network Technology Co., Ltd.
-package com.bytedance.labcv;
+package io.agora.extension;
 
 import android.content.Context;
 import android.content.res.AssetManager;

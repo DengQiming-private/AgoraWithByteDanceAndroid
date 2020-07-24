@@ -6,7 +6,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -23,6 +22,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+
+import io.agora.extension.AgoraByteDanceDataReceiver;
+import io.agora.extension.AgoraByteDanceNative;
+import io.agora.extension.ResourceHelper;
+import io.agora.extension.UtilsAsyncTask;
 import io.agora.rtc2.Constants;
 import io.agora.rtc2.IRtcEngineEventHandler;
 import io.agora.rtc2.RtcEngine;
@@ -30,7 +34,7 @@ import io.agora.rtc2.internal.RtcEngineImpl;
 import io.agora.rtc2.video.VideoCanvas;
 
 
-public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.OnUtilsAsyncTaskEvents, AgoraByteDanceDataReceiver{
+public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.OnUtilsAsyncTaskEvents, AgoraByteDanceDataReceiver {
 
     private static final String[] REQUESTED_PERMISSIONS = {
             Manifest.permission.RECORD_AUDIO,

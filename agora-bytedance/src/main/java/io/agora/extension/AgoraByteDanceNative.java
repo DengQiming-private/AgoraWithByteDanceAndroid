@@ -1,7 +1,6 @@
-package com.bytedance.labcv;
+package io.agora.extension;
 
 import android.content.Context;
-import android.util.Log;
 
 import androidx.annotation.Keep;
 

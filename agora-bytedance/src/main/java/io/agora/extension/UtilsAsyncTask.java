@@ -1,11 +1,11 @@
-package com.bytedance.labcv;
+package io.agora.extension;
 
 import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
 
 public class UtilsAsyncTask extends AsyncTask {
-    interface OnUtilsAsyncTaskEvents {
+    public interface OnUtilsAsyncTaskEvents {
         void onPreExecute();
         void onPostExecute();
     }
