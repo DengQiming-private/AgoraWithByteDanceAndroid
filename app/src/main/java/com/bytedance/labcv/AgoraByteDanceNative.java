@@ -34,6 +34,5 @@ public class AgoraByteDanceNative {
         if (dataReceiver != null) {
             dataReceiver.onDataReceive(data);
         }
-        Log.i("Agora_zt", data);
     }
 }

@@ -112,7 +112,6 @@ void dataCallback(std::string data) {
     JniHelper * jniHelper = JniHelper::getJniHelper();
     JNIEnv* env = jniHelper->attachCurrentTnread();
     if (env != nullptr) {
-//        jclass clz = env->FindClass("com/bytedance/labcv/AgoraByteDanceNative");
         jmethodID onDataCallbackFunc = env->GetStaticMethodID(jniHelper->agoraByteDanceNativeClz, "onDataCallback", "(Ljava/lang/String;)V");
         jstring javaMsg = env->NewStringUTF(data.c_str());
         env->CallStaticVoidMethod(jniHelper->agoraByteDanceNativeClz, onDataCallbackFunc, javaMsg);

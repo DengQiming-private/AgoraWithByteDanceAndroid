@@ -15,35 +15,39 @@
         android:id="@+id/view_container"
         android:layout_width="130dp"
         android:layout_height="172.9dp"
+        android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
-        android:layout_alignParentTop="true"
+        android:layout_marginTop="28dp"
         android:layout_marginEnd="24dp"
         android:layout_marginRight="24dp"
-        android:layout_marginTop="28dp"
         android:background="@color/main_color_gray">
 
     </FrameLayout>
 
-    <TextView
-        android:id="@+id/log_text_view"
+    <Button
+        android:id="@+id/enable_beauty_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_alignParentBottom="true"
         android:layout_marginStart="20dp"
         android:layout_marginBottom="20dp"
-        android:text="TextView" />
+        android:text="Enable" />
 
-    <Button
-        android:id="@+id/enable_beauty_button"
+    <TextView
+        android:id="@+id/infoTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
+        android:layout_above="@+id/enable_beauty_button"
+        android:layout_below="@+id/view_container"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
         android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginEnd="20dp"
         android:layout_marginBottom="20dp"
-        android:layout_toEndOf="@+id/log_text_view"
-        android:text="Button" />
+        android:text="TextView" />
 
     <!--    <Button-->
     <!--        android:layout_centerHorizontal="true"-->

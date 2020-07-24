@@ -45,8 +45,11 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
     private FrameLayout remoteVideoContainer;
     private RtcEngine mRtcEngine;
     private SurfaceView mRemoteView;
-    private TextView logTextView;
+    private TextView infoTextView;
     private Button beautyButton;
+    private String handInfoText;
+    private String faceInfoText;
+    private String lightInfoText;
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
@@ -56,16 +59,14 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
         initUI();
         checkPermission();
         File dstFile = getExternalFilesDir("assets");
-        Toast.makeText(this, dstFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
-        ResourceHelper.setResourceReady(this, true, 1);
 
         if (!ResourceHelper.isResourceReady(this, 1)) {
             Log.d("Agora_zt", "Resource is not ready, need to copy resource");
-            logTextView.setText("Resource is not ready, need to copy resource");
+            infoTextView.setText("Resource is not ready, need to copy resource");
             new UtilsAsyncTask(this, this).execute();
         } else {
             Log.d("Agora_zt", "Resource is ready");
-            logTextView.setText("Resource is ready");
+            infoTextView.setText("Resource is ready");
             initEffectEngine();
         }
         AgoraByteDanceNative.dataReceiver = this;
@@ -89,7 +90,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
     private void initUI() {
         localVideoContainer = findViewById(R.id.view_container);
         remoteVideoContainer = findViewById(R.id.remote_video_view_container);
-        logTextView = findViewById(R.id.log_text_view);
+        infoTextView = findViewById(R.id.infoTextView);
         beautyButton = findViewById(R.id.enable_beauty_button);
         beautyButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -279,12 +280,132 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
     public void onPostExecute() {
         ResourceHelper.setResourceReady(this, true, 1);
         Toast.makeText(this, "copy resource Ready", Toast.LENGTH_LONG).show();
-        logTextView.setText("Resource is ready");
+        infoTextView.setText("Resource is ready");
         initEffectEngine();
     }
 
     @Override
     public void onDataReceive(String data) {
+        try {
+
+            JSONObject o = new JSONObject(data);
+            if (o.has("plugin.bytedance.light.info")) {
+                StringBuilder sb = new StringBuilder();
+                JSONObject lightInfo = o.getJSONObject("plugin.bytedance.light.info");
+                int selectedIndex = lightInfo.getInt("selected_index");
+                double prob = lightInfo.getDouble("prob");
+                sb.append("Light: ");
+                String lightName[] = {"Indoor Yellow", "Indoor White", "Indoor weak", "Sunny", "Cloudy", "Night", "Backlight"};
+                if (selectedIndex >= 0 && selectedIndex <= 7) {
+                    sb.append(lightName[selectedIndex]);
+                    sb.append(" prob: ");
+                    sb.append(prob);
+                } else {
+                    sb.append(("Unknown"));
+                }
+                sb.append("\n");
+                lightInfoText = sb.toString();
+            }
+            if (o.has("plugin.bytedance.hand.info")) {
+                StringBuilder sb = new StringBuilder();
+                JSONArray handsInfo = o.getJSONArray("plugin.bytedance.hand.info");
+                sb.append("Hand: \n");
+                String handActionName[] = {"HEART_A", "HEART_B", "HEART_C", "HEART_D", "OK", "HAND_OPEN", "THUMB_UP", "THUMB_DOWN", "ROCK", "NAMASTE", "PLAM_UP", "FIST", "INDEX_FINGER_UP", "DOUBLE_FINGER_UP", "VICTORY", "BIG_V", "PHONECALL", "BEG", "THANKS", "UNKNOWN", "CABBAGE", "THREE", "FOUR", "PISTOL", "ROCK2", "SWEAR", "HOLDFACE", "SALUTE", "SPREAD", "PRAY", "QIGONG", "SLIDE", "PALM_DOWN", "PISTOL2", "NARUTO1", "NARUTO2", "NARUTO3", "NARUTO4", "NARUTO5", "NARUTO7", "NARUTO8", "NARUTO9", "NARUTO10", "NARUTO11", "NARUTO12"};
+                for (int i = 0; i < handsInfo.length(); i++) {
+                    JSONObject handInfo = handsInfo.getJSONObject(i);
+                    int action = handInfo.getInt("action");
+                    if (action >=0 && action <= 44) {
+                        sb.append("action: ");
+                        sb.append(handActionName[action]);
+                    }
+                    if (action == 47) {
+                        sb.append("action: ");
+                        sb.append("RAISE");
+                    }
+                    sb.append("\n");
+                    handInfoText = sb.toString();
+                }
+            }
+            if (o.has("plugin.bytedance.face.info")) {
+                StringBuilder sb = new StringBuilder();
+                JSONArray facesInfo = o.getJSONArray("plugin.bytedance.face.info");
+                sb.append("Face: \n");
+                for (int i = 0; i < facesInfo.length(); i++) {
+                    JSONObject faceInfo = facesInfo.getJSONObject(i);
+                    double yaw = faceInfo.getDouble("yaw");
+                    double roll = faceInfo.getDouble("roll");
+                    double pitch = faceInfo.getDouble("pitch");
+                    sb.append("yaw: ");
+                    sb.append(yaw);
+                    sb.append("roll: ");
+                    sb.append(roll);
+                    sb.append("pitch: ");
+                    sb.append(pitch);
+                    sb.append("\n");
+                    int action = faceInfo.getInt("action");
+                    sb.append("action: ");
+                    sb.append(action);
+                    if ((action & 0x00000002) != 0) {
+                        sb.append(" ");
+                        sb.append("眨眼");
+                    }
+                    if ((action & 0x00000004) != 0) {
+                        sb.append(" ");
+                        sb.append("张嘴");
+                    }
+                    if ((action & 0x00000008) != 0) {
+                        sb.append(" ");
+                        sb.append("摇头");
+                    }
+                    if ((action & 0x00000010) != 0) {
+                        sb.append(" ");
+                        sb.append("点头");
+                    }
+                    if ((action & 0x00000020) != 0) {
+                        sb.append(" ");
+                        sb.append("挑眉");
+                    }
+                    if ((action & 0x00000040) != 0) {
+                        sb.append(" ");
+                        sb.append("嘟嘴");
+                    }
+                    sb.append("\n");
+                    sb.append("expression: ");
+                    int expression = faceInfo.getInt("expression");
+                    String expressionName[] = {"Angry", "Disgust", "Fear", "Happy", "Sad", "Surprise", "Neutral"};
+                    if (expression >=0 && expression <=6) {
+                        sb.append(expressionName[expression]);
+                    } else {
+                        sb.append("Unknown");
+                    }
+                    sb.append("\n");
+                    double confuseProb = faceInfo.getDouble("confused_prob");
+                    sb.append("confused prob: ");
+                    sb.append(confuseProb);
+                    sb.append("\n");
+                    faceInfoText = sb.toString();
+                }
+            }
+            this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    StringBuilder sb = new StringBuilder();
+                    if (lightInfoText != null) {
+                        sb.append(lightInfoText);
+                    }
+                    if (handInfoText != null) {
+                        sb.append(handInfoText);
+                    }
+                    if (faceInfoText != null) {
+                        sb.append(faceInfoText);
+                    }
+                    infoTextView.setText(sb.toString());
+                }
+            });
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
     }
 }
