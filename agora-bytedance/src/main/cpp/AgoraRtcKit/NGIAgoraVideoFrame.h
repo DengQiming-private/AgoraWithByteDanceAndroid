@@ -8,8 +8,8 @@
 
 #pragma once  // NOLINT(build/header_guard)
 
-#include "../AgoraBase.h"
-#include "../AgoraRefPtr.h"
+#include "AgoraBase.h"
+#include "AgoraRefPtr.h"
 
 namespace agora {
 namespace rtc {
@@ -137,9 +137,9 @@ class IVideoFrame : public RefCountInterface {
 
   // Reserved for future Texture data path.
   // Expect to change when hardware video frame path is established.
-  typedef struct {
+  struct TextureId {
     uintptr_t id_ = 0;
-  } TextureId;
+  };
 
   /**
    * Get the texture id of the underlying buffer if type id texture.

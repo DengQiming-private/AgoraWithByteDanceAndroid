@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BASE_OPTIONAL_H_
-#define BASE_OPTIONAL_H_
+#ifndef AGORA_OPTIONAL_H_
+#define AGORA_OPTIONAL_H_
 
 #include <type_traits>
 #include <utility>
@@ -403,7 +403,7 @@ class OPTIONAL_DECLSPEC_EMPTY_BASES Optional
     return *this;
   }
 
-  constexpr T* operator->() {
+  const T* operator->() const {
     return &storage_.value_;
   }
 
@@ -415,16 +415,16 @@ class OPTIONAL_DECLSPEC_EMPTY_BASES Optional
 
   constexpr bool has_value() const { return storage_.is_populated_; }
 
-  constexpr T& value() & {
+  const T& value() const & {
     return storage_.value_;
   }
 
-  constexpr T&& value() && {
+  const T&& value() const && {
     return std::move(storage_.value_);
   }
 
   template <class U>
-  constexpr T value_or(U&& default_value) const& {
+  constexpr T value_or(U&& default_value) const & {
     // TODO(mlamouri): add the following assert when possible:
     // static_assert(std::is_copy_constructible<T>::value,
     //               "T must be copy constructible");
@@ -436,7 +436,7 @@ class OPTIONAL_DECLSPEC_EMPTY_BASES Optional
   }
 
   template <class U>
-  constexpr T value_or(U&& default_value) && {
+  constexpr T value_or(U&& default_value) const && {
     // TODO(mlamouri): add the following assert when possible:
     // static_assert(std::is_move_constructible<T>::value,
     //               "T must be move constructible");
@@ -506,7 +506,7 @@ bool operator==(const Optional<T>& lhs, const Optional<U>& rhs) {
 }
 
 template <class T, class U>
-constexpr bool operator!=(const Optional<T>& lhs, const Optional<U>& rhs) {
+bool operator!=(const Optional<T>& lhs, const Optional<U>& rhs) {
   if (lhs.has_value() != rhs.has_value())
     return true;
   if (!lhs.has_value())
@@ -515,7 +515,7 @@ constexpr bool operator!=(const Optional<T>& lhs, const Optional<U>& rhs) {
 }
 
 template <class T, class U>
-constexpr bool operator<(const Optional<T>& lhs, const Optional<U>& rhs) {
+bool operator<(const Optional<T>& lhs, const Optional<U>& rhs) {
   if (!rhs.has_value())
     return false;
   if (!lhs.has_value())
@@ -524,7 +524,7 @@ constexpr bool operator<(const Optional<T>& lhs, const Optional<U>& rhs) {
 }
 
 template <class T, class U>
-constexpr bool operator<=(const Optional<T>& lhs, const Optional<U>& rhs) {
+bool operator<=(const Optional<T>& lhs, const Optional<U>& rhs) {
   if (!lhs.has_value())
     return true;
   if (!rhs.has_value())
@@ -533,7 +533,7 @@ constexpr bool operator<=(const Optional<T>& lhs, const Optional<U>& rhs) {
 }
 
 template <class T, class U>
-constexpr bool operator>(const Optional<T>& lhs, const Optional<U>& rhs) {
+bool operator>(const Optional<T>& lhs, const Optional<U>& rhs) {
   if (!lhs.has_value())
     return false;
   if (!rhs.has_value())
@@ -542,7 +542,7 @@ constexpr bool operator>(const Optional<T>& lhs, const Optional<U>& rhs) {
 }
 
 template <class T, class U>
-constexpr bool operator>=(const Optional<T>& lhs, const Optional<U>& rhs) {
+bool operator>=(const Optional<T>& lhs, const Optional<U>& rhs) {
   if (!rhs.has_value())
     return true;
   if (!lhs.has_value())
@@ -704,4 +704,4 @@ struct hash<agora::base::Optional<T>> {
 
 }  // namespace std
 
-#endif  // BASE_OPTIONAL_H_
+#endif  // AGORA_OPTIONAL_H_

@@ -5,6 +5,7 @@
 #ifndef AGORAWITHBYTEDANCE_EGLCORE_H
 #define AGORAWITHBYTEDANCE_EGLCORE_H
 
+#if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
 #include <android/native_window.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -76,5 +77,6 @@ namespace agora {
         };
     }
 }
+#endif //defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
 
 #endif //AGORAWITHBYTEDANCE_EGLCORE_H

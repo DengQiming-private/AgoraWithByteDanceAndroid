@@ -2,11 +2,13 @@
 // Created by DYF on 2020/7/13.
 //
 
+#include "JniHelper.h"
+
 #include "ByteDanceProcessor.h"
 
 #include <chrono>
 
-#include "JniHelper.h"
+
 #include "../logutils.h"
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
@@ -19,22 +21,38 @@
 if(ret != 0){\
     PRINTF_ERROR(__VA_ARGS__);\
 }
-void dataCallback(std::string data);
+
+extern "C" void initGL();
+extern "C" void releaseGL();
+extern "C" void makeCurrent();
+extern "C" void dataCallback(const char * data);
+
 namespace agora {
     namespace extension {
         using namespace rapidjson;
         bool ByteDanceProcessor::initOpenGL() {
-            const std::lock_guard<std::mutex> lock(mutex_);
+//            const std::lock_guard<std::mutex> lock(mutex_);
+            initGL();
+
+#if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
             if (!eglCore_) {
                 eglCore_ = new EglCore();
-                offscreenSurface_ = eglCore_->createOffscreenSurface(0, 0);
+                offscreenSurface_ = eglCore_->createOffscreenSurface(640, 320);
+
+
+            }
+            if  (!eglCore_->isCurrent(offscreenSurface_)) {
                 eglCore_->makeCurrent(offscreenSurface_);
             }
+#endif
             return true;
         }
 
         bool ByteDanceProcessor::releaseOpenGL() {
             const std::lock_guard<std::mutex> lock(mutex_);
+
+            releaseGL();
+#if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
             if (eglCore_) {
                 if (offscreenSurface_) {
                     eglCore_->releaseSurface(offscreenSurface_);
@@ -42,10 +60,11 @@ namespace agora {
                 delete eglCore_;
                 eglCore_ = nullptr;
             }
+#endif
             return true;
         }
 
-        void ByteDanceProcessor::prepareCachedVideoFrame(const agora::media::VideoFrame &capturedFrame) {
+        void ByteDanceProcessor::prepareCachedVideoFrame(const agora::media::base::VideoFrame &capturedFrame) {
             int ysize = capturedFrame.yStride * capturedFrame.height;
             int usize = capturedFrame.uStride * capturedFrame.height / 2;
             int vsize = capturedFrame.vStride * capturedFrame.height / 2;
@@ -82,19 +101,23 @@ namespace agora {
 
         }
 
-        void ByteDanceProcessor::processEffect(const agora::media::VideoFrame &capturedFrame) {
+        void ByteDanceProcessor::processEffect(const agora::media::base::VideoFrame &capturedFrame) {
+            makeCurrent();
             if (!byteEffectHandler_) {
                 bef_effect_result_t ret;
                 ret = bef_effect_ai_create(&byteEffectHandler_);
                 CHECK_BEF_AI_RET_SUCCESS(ret,
                                          "ByteDanceProcessor::processEffect create effect handle failed ! %d",
                                          ret);
-
+#if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
                 void *context = AndroidContextHelper::getContext();
                 ret = bef_effect_ai_check_license(
                         JniHelper::getJniHelper()->attachCurrentTnread(),
                         reinterpret_cast<jobject>(context), byteEffectHandler_,
                         licensePath_.c_str());
+#elif defined __APPLE__
+                ret = bef_effect_ai_check_license(byteEffectHandler_, licensePath_.c_str());
+#endif
                 CHECK_BEF_AI_RET_SUCCESS(ret,
                                          "ByteDanceProcessor::processEffect check license failed, %d path: %s",
                                          ret, licensePath_.c_str());
@@ -182,7 +205,7 @@ namespace agora {
             memcpy(capturedFrame.uBuffer, yuvBuffer_ + ysize, usize);
             memcpy(capturedFrame.vBuffer, yuvBuffer_ + ysize + usize, vsize);
         }
-
+    
         void ByteDanceProcessor::processFaceDetect() {
             if (!faceDetectHandler_) {
                 bef_effect_result_t ret;
@@ -192,12 +215,15 @@ namespace agora {
                 CHECK_BEF_AI_RET_SUCCESS(ret,
                                          "ByteDanceProcessor::processFaceDetect create face detect handle failed ! %d",
                                          ret);
-
+#if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
                 void *context = AndroidContextHelper::getContext();
                 ret = bef_effect_ai_face_check_license(
                         JniHelper::getJniHelper()->attachCurrentTnread(),
                         reinterpret_cast<jobject>(context), faceDetectHandler_,
                         licensePath_.c_str());
+#elif defined __APPLE__
+                ret = bef_effect_ai_face_check_license(faceDetectHandler_, licensePath_.c_str());
+#endif
                 CHECK_BEF_AI_RET_SUCCESS(ret,
                                          "ByteDanceProcessor::processFaceDetect check_license face detect failed ! %d",
                                          ret);
@@ -216,11 +242,17 @@ namespace agora {
                 CHECK_BEF_AI_RET_SUCCESS(ret,
                                          "ByteDanceProcessor::processFaceDetect create face attribute handle failed ! %d",
                                          ret);
+                
+#if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
                 void *context = AndroidContextHelper::getContext();
                 ret = bef_effect_ai_face_attribute_check_license(
                         JniHelper::getJniHelper()->attachCurrentTnread(),
                         reinterpret_cast<jobject>(context), faceAttributesHandler_,
                         licensePath_.c_str());
+#elif defined __APPLE__
+                ret = bef_effect_ai_face_attribute_check_license(faceAttributesHandler_, licensePath_.c_str());
+#endif
+                
                 CHECK_BEF_AI_RET_SUCCESS(ret,
                                          "ByteDanceProcessor::processFaceDetect check_license face attribute failed ! %d",
                                          ret);
@@ -284,12 +316,16 @@ namespace agora {
                 CHECK_BEF_AI_RET_SUCCESS(ret,
                                          "ByteDanceProcessor::processHandDetect create hand detect handle failed ! %d",
                                          ret);
-
+                
+#if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
                 void *context = AndroidContextHelper::getContext();
                 ret = bef_effect_ai_hand_check_license(
                         JniHelper::getJniHelper()->attachCurrentTnread(),
                         reinterpret_cast<jobject>(context), handDetectHandler_,
                         licensePath_.c_str());
+#elif defined __APPLE__
+                ret = bef_effect_ai_hand_check_license(handDetectHandler_, licensePath_.c_str());
+#endif
                 CHECK_BEF_AI_RET_SUCCESS(ret,
                                          "ByteDanceProcessor::processHandDetect check_license hand detect failed ! %d",
                                          ret);
@@ -374,12 +410,16 @@ namespace agora {
                 CHECK_BEF_AI_RET_SUCCESS(ret,
                                          "ByteDanceProcessor::processLightDetect create face detect handle failed ! %d",
                                          ret);
-
+                
+#if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
                 void *context = AndroidContextHelper::getContext();
                 ret = bef_effect_ai_lightcls_check_license(
                         JniHelper::getJniHelper()->attachCurrentTnread(),
                         reinterpret_cast<jobject>(context), lightDetectHandler_,
                         licensePath_.c_str());
+#elif defined __APPLE__
+                ret = bef_effect_ai_lightcls_check_license(lightDetectHandler_, licensePath_.c_str());
+#endif
                 CHECK_BEF_AI_RET_SUCCESS(ret,
                                          "ByteDanceProcessor::processLightDetect check_license light detect failed ! %d",
                                          ret);
@@ -408,9 +448,10 @@ namespace agora {
             dataCallback(text);
         }
 
-        int ByteDanceProcessor::processFrame(const agora::media::VideoFrame &capturedFrame) {
+        int ByteDanceProcessor::processFrame(const agora::media::base::VideoFrame &capturedFrame) {
             const std::lock_guard<std::mutex> lock(mutex_);
 
+            initOpenGL();
             if (aiEffectEnabled_ || faceAttributeEnabled_) {
                 prepareCachedVideoFrame(capturedFrame);
             }
@@ -468,7 +509,7 @@ namespace agora {
                 rgbaBuffer_ = nullptr;
             }
             prevFrame_ = {
-                    media::VIDEO_PIXEL_I420,
+                    media::base::VIDEO_PIXEL_I420,
                     0,
                     0,
                     0,

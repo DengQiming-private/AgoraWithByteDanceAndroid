@@ -299,77 +299,61 @@ class IChannelEventHandler {
    * Occurs when the local user fails to join a channel.
    * @param errorCode The error code: #JOIN_CHANNEL_ERROR.
    */
-  virtual void onJoinFailure(JOIN_CHANNEL_ERROR errorCode) { (JOIN_CHANNEL_ERROR) errorCode; }
+  virtual void onJoinFailure(JOIN_CHANNEL_ERROR errorCode) {}
   /**
    * Occurs when the local user leaves a channel.
    * @param reason The reason for the local user leaving the channel: #LEAVE_CHANNEL_REASON.
    */
-  virtual void onLeave(LEAVE_CHANNEL_REASON reason) { (LEAVE_CHANNEL_REASON) reason; }
+  virtual void onLeave(LEAVE_CHANNEL_REASON reason) {}
   /**
    * Occurs when the local user receives a channel message.
    * @param message The pointer to the messsage: IMessage.
    */
-  virtual void onMessageReceived(const IMessage *message) { (IMessage *)message; }
+  virtual void onMessageReceived(const IMessage *message) {}
   /**
    * Reports the state of the message sent by the local user.
    * @param messageId ID of the message.
    * @param state The state of the message: #CHANNEL_MESSAGE_STATE.
    */
-  virtual void onSendMessageState(long long messageId, CHANNEL_MESSAGE_STATE state) {
-    (long long)messageId;
-    (CHANNEL_MESSAGE_STATE) state;
-  }
+  virtual void onSendMessageState(long long messageId, CHANNEL_MESSAGE_STATE state) {}
   /**
    * Occurs when another member joins the channel.
    * @param member The pointer to the member who joins the channel: IChannelMember.
    */
-  virtual void onMemberJoined(IChannelMember *member) { (IChannelMember *)member; }
+  virtual void onMemberJoined(IChannelMember *member) {}
   /**
    * Occurs when the other member leaves the channel.
    * @param member The pointer to the member who leaves the channel: IChannelMember.
    */
-  virtual void onMemberLeft(IChannelMember *member) { (IChannelMember *)member; }
+  virtual void onMemberLeft(IChannelMember *member) {}
   /**
    * Reports all the members in the channel.
    * @param members The pointer to each member in the channel: IChannelMember.
    * @param userCount The number of users in the channel.
    */
-  virtual void onMembersGotten(IChannelMember **members, int userCount) {
-    (IChannelMember **)members;
-    (int)userCount;
-  }
+  virtual void onMembersGotten(IChannelMember **members, int userCount) {}
   /**
    * Occurs when the channel attributes are updated.
    * @param attributes The pointer to the current channel attributes: IChannelAttributes.
    */
-  virtual void onAttributesUpdated(const IChannelAttributes *attributes) {
-    (IChannelAttributes *)attributes;
-  }
+  virtual void onAttributesUpdated(const IChannelAttributes *attributes) {}
   /**
    * Occurs when the local user calls updateAttributes().
    * @param requestId ID of the current attribute update request.
    * @param resCode The response code: #RESPONSE_CODE.
    */
-  virtual void onUpdateAttributesResponse(int64_t requestId, RESPONSE_CODE resCode) {
-    (long long)requestId;
-    (RESPONSE_CODE) resCode;
-  }
+  virtual void onUpdateAttributesResponse(int64_t requestId, RESPONSE_CODE resCode) {}
   /**
    * Occurs when the channel attributes are deleted.
    * @param attributes The pointer to the channel attributes that you want to remove: IChannelAttributes.
    */
-  virtual void onAttributesDeleted(const IChannelAttributes *attributes) {
-    (IChannelAttributes *)attributes;
-  }
+  virtual void onAttributesDeleted(const IChannelAttributes *attributes) {}
   /**
    * Occurs when the local user calls deleteAttributes().
    * @param requestId ID of the current attribute delete request.
    * @param resCode The response code: #RESPONSE_CODE.
    */
-  virtual void onDeleteAttributesResponse(int64_t requestId, RESPONSE_CODE resCode) {
-    (long long)requestId;
-    (RESPONSE_CODE) resCode;
-  }
+  virtual void onDeleteAttributesResponse(int64_t requestId, RESPONSE_CODE resCode) {}
 };
 /**
  * The IChannel class.
@@ -468,7 +452,7 @@ class IRtmServiceEventHandler {
    * Occurs when the user fails to log in the RTM service.
    * @param errorCode The reason for the login failure: #LOGIN_ERR_CODE.
    */
-  virtual void onLoginFailure(LOGIN_ERR_CODE errorCode) { (LOGIN_ERR_CODE) errorCode; }
+  virtual void onLoginFailure(LOGIN_ERR_CODE errorCode) {}
   /**
    * Occurs when the user successfully logs out of the RTM service.
    */
@@ -483,19 +467,13 @@ class IRtmServiceEventHandler {
    * @param messageId ID of the message.
    * @param state The current state of the message: #PEER_MESSAGE_STATE.
    */
-  virtual void onSendMessageState(int64_t messageId, PEER_MESSAGE_STATE state) {
-    (int64_t) messageId;
-    (PEER_MESSAGE_STATE) state;
-  }
+  virtual void onSendMessageState(int64_t messageId, PEER_MESSAGE_STATE state) {}
   /**
    * Occurs when the local user receives a message from a remote user.
    * @param peerId ID of the remote user that sends the message.
    * @param message The pointer to the message: IMessage.
    */
-  virtual void onMessageReceivedFromPeer(const char *peerId, const IMessage *message) {
-    (char *)peerId;
-    (IMessage *)message;
-  }
+  virtual void onMessageReceivedFromPeer(const char *peerId, const IMessage *message) {}
 };
 /**
  * The IRtmService class.
@@ -507,6 +485,7 @@ class IRtmService {
    * Creates and gets an IRtmService instance.
    * @param appId The pointer to the app ID.
    * @param eventHandler The pointer to the IRtmServiceEventHandler object.
+   * @param eventSpace The connection specific ID, used during report to argus.
    * @return
    * - 0: Success.
    * - < 0: Failure.

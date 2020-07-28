@@ -5,8 +5,8 @@
 #ifndef AGORAWITHBYTEDANCE_EXTENSIONVIDEOFILTER_H
 #define AGORAWITHBYTEDANCE_EXTENSIONVIDEOFILTER_H
 
-#include "../agora/api2/NGIAgoraMediaNodeFactory.h"
-#include "../agora/AgoraRefPtr.h"
+#include "AgoraRtcKit/NGIAgoraMediaNodeFactory.h"
+#include "AgoraRtcKit/AgoraRefPtr.h"
 #include "ByteDanceProcessor.h"
 
 namespace agora {
@@ -17,8 +17,8 @@ namespace agora {
 
             ~ExtensionVideoFilter();
 
-            bool adaptVideoFrame(const agora::media::VideoFrame &capturedFrame,
-                                 agora::media::VideoFrame &adaptedFrame) override;
+            bool adaptVideoFrame(const agora::media::base::VideoFrame &capturedFrame,
+                                 agora::media::base::VideoFrame &adaptedFrame) override;
 
             void setEnabled(bool enable) override;
 

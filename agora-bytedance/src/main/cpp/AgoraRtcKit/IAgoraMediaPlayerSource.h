@@ -3,16 +3,16 @@
 //
 //  Copyright (c) 2018 Agora.io. All rights reserved.
 //
-
 #pragma once  // NOLINT(build/header_guard)
 
-#include "../AgoraBase.h"
-#include "../AgoraMediaBase.h"
-#include "../AgoraRefPtr.h"
-#include "IAgoraService.h"
+#include "AgoraBase.h"
+#include "AgoraMediaBase.h"
+#include "AgoraMediaPlayerTypes.h"
+#include "AgoraRefPtr.h"
 
 namespace agora {
 namespace rtc {
+
 class IMediaPlayerSourceObserver;
 
 /**
@@ -20,7 +20,19 @@ class IMediaPlayerSourceObserver;
  * create multiple media player source objects.
  */
 class IMediaPlayerSource : public RefCountInterface {
+protected:
+  virtual ~IMediaPlayerSource() = default;
+
 public:
+
+  /**
+   * Get unique source id of the media player source.
+   * @return
+   * - >= 0: The source id of this media player source.
+   * - < 0: Failure.
+   */
+  virtual int getSourceId() const = 0;
+
   /**
    * Opens a media file with a specified URL.
    * @param url The URL of the media file that you want to play.
@@ -82,20 +94,76 @@ public:
 
   virtual int getStreamCount(int64_t& count) = 0;
 
-  virtual int getStreamInfo(int64_t index, agora::media::MediaStreamInfo* info) = 0;
+  virtual int getStreamInfo(int64_t index, media::base::MediaStreamInfo* info) = 0;
 
   /**
    * Sets whether to loop the media file for playback.
-   * @param looping Determines whether to loop the media file.
-   * - true: Loop the media file.
-   * - false: Do not loop the media file.
+   * @param loopCount the number of times looping the media file.
+   * - 0: Play the audio effect once.
+   * - 1: Play the audio effect twice.
+   * - -1: Play the audio effect in a loop indefinitely, until stopEffect() or stop() is called.
    * @return
    * - 0: Success.
    * - < 0: Failure.
    */
-  virtual int setLooping(bool looping) = 0;
+  virtual int setLoopCount(int loopCount) = 0;
 
-  virtual agora::media::MEDIA_PLAYER_STATE getState() = 0;
+  /**
+   * Change playback speed
+   * @param speed the enum of playback speed
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int changePlaybackSpeed(media::base::MEDIA_PLAYER_PLAYBACK_SPEED speed) = 0;
+
+  /**
+   * Slect playback audio track of the media file
+   * @param speed the index of the audio track in meia file
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int selectAudioTrack(int index) = 0;
+
+  /**
+   * change player option before play a file
+   * @param key the key of the option param
+   * @param value the value of option param
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int setPlayerOption(const char* key, int value) = 0;
+
+  /**
+   * take screenshot while playing  video
+   * @param filename the filename of screenshot file
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int takeScreenshot(const char* filename) = 0;
+
+  /**
+   * select internal subtitles in video
+   * @param index the index of the internal subtitles
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int selectInternalSubtitle(int index) = 0;
+
+  /**
+   * set an external subtitle for video
+   * @param url The URL of the subtitle file that you want to load.
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int setExternalSubtitle(const char* url) = 0;
+
+  virtual media::base::MEDIA_PLAYER_STATE getState() = 0;
 
   /**
    * Registers a media player source observer.
@@ -106,7 +174,7 @@ public:
    * - 0: Success.
    * - < 0: Failure.
    */
-  virtual int registerPlayerObserver(IMediaPlayerSourceObserver* observer) = 0;
+  virtual int registerPlayerSourceObserver(IMediaPlayerSourceObserver* observer) = 0;
 
   /**
    * Releases the media player source observer.
@@ -115,7 +183,7 @@ public:
    * - 0: Success.
    * - < 0: Failure.
    */
-  virtual int unregisterPlayerObserver(IMediaPlayerSourceObserver* observer) = 0;
+  virtual int unregisterPlayerSourceObserver(IMediaPlayerSourceObserver* observer) = 0;
 
   /**
    * Register the audio frame observer.
@@ -125,7 +193,7 @@ public:
    * - 0: Success.
    * - < 0: Failure.
    */
-  virtual int registerAudioFrameObserver(IAudioFrameObserver* observer) = 0;
+  virtual int registerAudioFrameObserver(media::base::IAudioFrameObserver* observer) = 0;
 
   /**
    * Releases the audio frame observer.
@@ -134,36 +202,35 @@ public:
    * - 0: Success.
    * - < 0: Failure.
    */
-  virtual int unregisterAudioFrameObserver(IAudioFrameObserver* observer) = 0;
-
-protected:
-  virtual ~IMediaPlayerSource() {}
+  virtual int unregisterAudioFrameObserver(media::base::IAudioFrameObserver* observer) = 0;
 };
 
 class IMediaPlayerSourceObserver {
  public:
+  virtual ~IMediaPlayerSourceObserver() = default;
+
   /**
    * @brief Triggered when the player state changes
    *
    * @param state New player state
    * @param ec Player error message
    */
-  virtual void onPlayerSourceStateChanged(const agora::media::MEDIA_PLAYER_STATE state,
-                                    const agora::media::MEDIA_PLAYER_ERROR ec) = 0;
+  virtual void onPlayerSourceStateChanged(media::base::MEDIA_PLAYER_STATE state,
+                                          media::base::MEDIA_PLAYER_ERROR ec) = 0;
 
   /**
    * @brief Triggered when the player progress changes, once every 1 second
    *
    * @param position Current playback progress, in seconds
    */
-  virtual void onPositionChanged(const int64_t position) = 0;
+  virtual void onPositionChanged(int64_t position) = 0;
 
   /**
    * @brief Triggered when the player have some event
    *
    * @param event
    */
-  virtual void onPlayerEvent(const agora::media::MEDIA_PLAYER_EVENT event) = 0;
+  virtual void onPlayerEvent(media::base::MEDIA_PLAYER_EVENT event) = 0;
 
   /**
    * @brief Triggered when meta data is obtained
@@ -172,8 +239,6 @@ class IMediaPlayerSourceObserver {
    * @param length  meta data length
    */
   virtual void onMetaData(const void* data, int length) = 0;
-
-  virtual ~IMediaPlayerSourceObserver() {}
 };
 
 } //namespace rtc

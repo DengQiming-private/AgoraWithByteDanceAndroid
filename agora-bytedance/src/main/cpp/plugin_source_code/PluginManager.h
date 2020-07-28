@@ -5,13 +5,13 @@
 #ifndef AGORAWITHBYTEDANCE_PLUGINMANAGER_H
 #define AGORAWITHBYTEDANCE_PLUGINMANAGER_H
 
-#include <jni.h>
+#include "JniHelper.h"
+
 #include <string>
-#include "../agora/api2/IAgoraService.h"
+#include "AgoraRtcKit/IAgoraService.h"
 #include "ExtensionProvider.h"
 #include "../logutils.h"
-#include "JniHelper.h"
-#include "../agora/AgoraRefPtr.h"
+#include "AgoraRtcKit/AgoraRefPtr.h"
 #include "error_code.h"
 #include "ByteDanceProcessor.h"
 

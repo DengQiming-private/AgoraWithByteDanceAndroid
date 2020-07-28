@@ -1,6 +1,9 @@
 //
 // Created by 张涛 on 2020/4/27.
 //
+
+#if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
+
 #include "EGLCore.h"
 #include <assert.h>
 
@@ -228,3 +231,5 @@ namespace agora {
         }
     }
 }
+
+#endif //defined(__ANDROID__) || defined(TARGET_OS_ANDROID)

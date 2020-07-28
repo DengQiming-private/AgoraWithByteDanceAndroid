@@ -19,7 +19,7 @@ namespace agora {
 
         agora_refptr<agora::rtc::IVideoFilter>
         ExtensionProvider::createVideoFilter(const char *name) {
-            PRINTF_INFO("ExtensionProvider::createVideoFilter");
+//            PRINTF_INFO("ExtensionProvider::createVideoFilter");
             auto videoFilter = new agora::RefCountedObject<agora::extension::ExtensionVideoFilter>(byteDanceProcessor_);
             return videoFilter;
         }

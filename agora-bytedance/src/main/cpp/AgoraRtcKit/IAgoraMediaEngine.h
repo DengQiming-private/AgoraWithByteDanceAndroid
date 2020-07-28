@@ -25,144 +25,6 @@ enum MEDIA_SOURCE_TYPE {
    */
   AUDIO_RECORDING_SOURCE = 1,
 };
-/**
- * The IAudioFrameObserver class.
- */
-class IAudioFrameObserver {
- public:
-  /**
-   * The audio frame type.
-   */
-  enum AUDIO_FRAME_TYPE {
-    /**
-     * 0: The frame type is PCM.
-     */
-    FRAME_TYPE_PCM16 = 0,  // PCM 16bit little endian
-  };
-  /** 
-   * The definition of AudioFrame.
-   */
-  struct AudioFrame {
-    AUDIO_FRAME_TYPE type;
-    /** 
-     * The number of samples per channel in this frame.
-     */
-    int samplesPerChannel;
-    /** 
-     * The number of bytes per sample: Two for PCM 16.
-     */
-    int bytesPerSample;  
-    /** 
-     * The number of channels (data is interleaved, if stereo).
-     */
-    int channels; 
-    /** 
-     * The Sample rate.
-     */
-    int samplesPerSec;
-    /** 
-     * The pointer to the data buffer.
-     */
-    void* buffer;  
-    /** 
-     * The timestamp to render the audio data. Use this member to synchronize the audio renderer while 
-     * rendering the audio streams.
-     *
-     * @note
-     * This timestamp is for audio stream rendering. Set it as 0.
-    */
-    int64_t renderTimeMs;
-    int avsync_type;
-  };
-
- public:
-  virtual ~IAudioFrameObserver() = default;
-
-  /** 
-   * Occurs when the recorded audio frame is received.
-   * @param audioFrame The reference to the audio frame: AudioFrame.
-   * @return
-   * - true: The recorded audio frame is valid and is encoded and sent.
-   * - false: The recorded audio frame is invalid and is not encoded or sent.
-   */
-  virtual bool onRecordAudioFrame(AudioFrame& audioFrame) = 0;
-  /** 
-   * Occurs when the playback audio frame is received.
-   * @param audioFrame The reference to the audio frame: AudioFrame.
-   * @return
-   * - true: The playback audio frame is valid and is encoded and sent.
-   * - false: The playback audio frame is invalid and is not encoded or sent.
-   */
-  virtual bool onPlaybackAudioFrame(AudioFrame& audioFrame) = 0;
-  /** 
-   * Occurs when the mixed audio data is received.
-   * @param audioFrame The reference to the audio frame: AudioFrame.
-   * @return
-   * - true: The mixed audio data is valid and is encoded and sent.
-   * - false: The mixed audio data is invalid and is not encoded or sent.
-   */
-  virtual bool onMixedAudioFrame(AudioFrame& audioFrame) = 0;
-  /** 
-   * Occurs when the playback audio frame before mixing is received.
-   * @param uid ID of the remote user.
-   * @param audioFrame The reference to the audio frame: AudioFrame.
-   * @return
-   * - true: The playback audio frame before mixing is valid and is encoded and sent.
-   * - false: The playback audio frame before mixing is invalid and is not encoded or sent.
-   */
-  virtual bool onPlaybackAudioFrameBeforeMixing(unsigned int uid, AudioFrame& audioFrame) = 0;
-};
-/**
- * The IVideoFrameObserver class.
- */
-class IVideoFrameObserver {
- public:
-  using VideoFrame = agora::media::VideoFrame;
-  
- public:
-  virtual ~IVideoFrameObserver() {}
-
-  /** 
-   * Occurs each time the SDK receives a video frame captured by the local camera.
-   *
-   * After you successfully register the video frame observer, the SDK triggers this callback each time 
-   * a video frame is received. In this callback, you can get the video data captured by the local 
-   * camera. You can then pre-process the data according to your scenarios.
-   * 
-   * After pre-processing, you can send the processed video data back to the SDK by setting the 
-   * `videoFrame` parameter in this callback.
-   * 
-   * @param videoFrame A pointer to the video frame: VideoFrame
-   * @return Determines whether to ignore the current video frame if the pre-processing fails:
-   * - true: Do not ignore.
-   * - false: Ignore, in which case this method does not sent the current video frame to the SDK.
-  */
-  virtual bool onCaptureVideoFrame(VideoFrame& videoFrame) = 0;
-  /** 
-   * Occurs each time the SDK receives a video frame sent by the remote user.
-   * 
-   * After you successfully register the video frame observer, the SDK triggers this callback each time a 
-   * video frame is received. In this callback, you can get the video data sent by the remote user. You 
-   * can then post-process the data according to your scenarios.
-   * 
-   * After post-processing, you can send the processed data back to the SDK by setting the `videoFrame`
-   * parameter in this callback.
-   *
-   * @param uid ID of the remote user who sends the current video frame.
-   * @param connectionId ID of the connection.
-   * @param videoFrame A pointer to the video frame: VideoFrame
-   * @return Determines whether to ignore the current video frame if the post-processing fails:
-   * - true: Do not ignore.
-   * - false: Ignore, in which case this method does not sent the current video frame to the SDK.
-   */
-  virtual bool onRenderVideoFrame(rtc::uid_t uid, rtc::conn_id_t connectionId,
-                                  VideoFrame& videoFrame) = 0;
-
-  virtual VIDEO_PIXEL_FORMAT getVideoPixelFormatPreference() {
-      return VIDEO_PIXEL_I420; }
-  virtual bool getRotationApplied() { return false; }
-  virtual bool getMirrorApplied() { return false; }
-};
 
 /**
  * The IMediaEngine class.
@@ -282,10 +144,7 @@ class IMediaEngine {
    * @param channels The number of channels of the external audio source, which can be set as 1 or 2:
    * - 1: Mono.
    * - 2: Stereo.
-   * @param sourceNumber The number of audio source per channel.
-   * - 1: Mono
-   * - 2: Dual-track
-   *
+   * @param sourceNumber The number of the external audio sources, should be greater than 0.
    * @return
    * - 0: Success.
    * - < 0: Failure.
@@ -307,7 +166,7 @@ class IMediaEngine {
    * - 0: Success.
    * - < 0: Failure.
    */
-  virtual int pushVideoFrame(media::ExternalVideoFrame* frame,
+  virtual int pushVideoFrame(base::ExternalVideoFrame* frame,
                              rtc::conn_id_t connectionId = rtc::DEFAULT_CONNECTION_ID) = 0;
 
   /** 

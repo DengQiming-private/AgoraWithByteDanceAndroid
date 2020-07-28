@@ -57,6 +57,8 @@ find_library( # Sets the name of the path variable.
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
 
+target_include_directories(native-lib PRIVATE ${PROJECT_SOURCE_DIR})
+
 target_link_libraries( # Specifies the target library.
                        native-lib
                         ${agora-lib-so}

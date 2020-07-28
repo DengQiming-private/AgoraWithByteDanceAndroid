@@ -5,6 +5,8 @@
 #ifndef AGORA_VIDEO_WITH_FACEUNITY_ANDROID_JNIHELPER_H
 #define AGORA_VIDEO_WITH_FACEUNITY_ANDROID_JNIHELPER_H
 
+#if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
+
 #include <jni.h>
 
 namespace agora {
@@ -48,4 +50,7 @@ namespace agora {
         };
     }
 }
+
+#endif //defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
+
 #endif //AGORA_VIDEO_WITH_FACEUNITY_ANDROID_JNIHELPER_H

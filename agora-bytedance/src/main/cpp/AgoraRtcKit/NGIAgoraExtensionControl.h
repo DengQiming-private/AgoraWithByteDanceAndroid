@@ -8,8 +8,9 @@
 
 #pragma once  // NOLINT(build/header_guard)
 
-#include "../AgoraBase.h"
-#include "../AgoraRefPtr.h"
+#include "AgoraBase.h"
+#include "AgoraRefPtr.h"
+#include "IAgoraLog.h"
 #include "NGIAgoraVideoFrame.h"
 #include "NGIAgoraMediaNodeFactory.h"
 
@@ -123,7 +124,7 @@ class IExtensionControl {
    * - 0, if succeeds
    * - <0, if error happens
    */
-  virtual int log(LOG_LEVEL level, const char* message) = 0;
+  virtual int log(commons::LOG_LEVEL level, const char* message) = 0;
 
  protected:
   virtual ~IExtensionControl() {}

@@ -10,10 +10,11 @@
 #include <mutex>
 #include <vector>
 
-#include "../agora/AgoraRefPtr.h"
-#include "../agora/AgoraMediaBase.h"
+#include "AgoraRtcKit/AgoraRefPtr.h"
+#include "AgoraRtcKit/AgoraMediaBase.h"
 #include "../bytedance/bef_effect_ai_api.h"
 #include "../bytedance/bef_effect_ai_lightcls.h"
+
 #include "EGLCore.h"
 #include "rapidjson/rapidjson.h"
 
@@ -25,7 +26,7 @@ namespace agora {
 
             bool releaseOpenGL();
 
-            int processFrame(const agora::media::VideoFrame &capturedFrame);
+            int processFrame(const agora::media::base::VideoFrame &capturedFrame);
 
             int releaseEffectEngine();
 
@@ -39,11 +40,13 @@ namespace agora {
             void processFaceDetect();
             void processHandDetect();
             void processLightDetect();
-            void processEffect(const agora::media::VideoFrame &capturedFrame);
-            void prepareCachedVideoFrame(const agora::media::VideoFrame &capturedFrame);
+            void processEffect(const agora::media::base::VideoFrame &capturedFrame);
+            void prepareCachedVideoFrame(const agora::media::base::VideoFrame &capturedFrame);
 
+#if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
             EglCore *eglCore_ = nullptr;
             EGLSurface offscreenSurface_ = nullptr;
+#endif
             std::mutex mutex_;
 
             bef_effect_handle_t byteEffectHandler_ = nullptr;
@@ -73,8 +76,8 @@ namespace agora {
             std::string lightDetectModelPath_;
             bef_effect_handle_t lightDetectHandler_ = nullptr;
 
-            agora::media::VideoFrame prevFrame_ = {
-                    media::VIDEO_PIXEL_I420,
+            agora::media::base::VideoFrame prevFrame_ = {
+                media::base::VIDEO_PIXEL_I420,
                     0,
                     0,
                     0,

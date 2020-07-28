@@ -5,10 +5,10 @@
 #ifndef AGORAWITHBYTEDANCE_EXTENSIONPROVIDER_H
 #define AGORAWITHBYTEDANCE_EXTENSIONPROVIDER_H
 
-#include "../agora/api2/NGIAgoraMediaNodeFactory.h"
-#include "../agora/api2/NGIAgoraExtensionControl.h"
-#include "../agora/AgoraRefPtr.h"
-#include "../agora/api2/AgoraRefCountedObject.h"
+#include "AgoraRtcKit/NGIAgoraMediaNodeFactory.h"
+#include "AgoraRtcKit/NGIAgoraExtensionControl.h"
+#include "AgoraRtcKit/AgoraRefPtr.h"
+#include "AgoraRtcKit/AgoraRefCountedObject.h"
 #include "ExtensionVideoFilter.h"
 
 namespace agora {

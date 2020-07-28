@@ -2,6 +2,8 @@
 // Created by 张涛 on 2020/2/27.
 //
 
+#if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
+
 #include "JniHelper.h"
 
 namespace agora {
@@ -76,3 +78,5 @@ namespace agora {
         }
     }
 }
+
+#endif //defined(__ANDROID__) || defined(TARGET_OS_ANDROID)

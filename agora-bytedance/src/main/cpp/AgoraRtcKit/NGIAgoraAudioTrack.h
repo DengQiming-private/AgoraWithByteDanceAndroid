@@ -8,7 +8,7 @@
 
 #pragma once  // NOLINT(build/header_guard)
 
-#include "../AgoraRefPtr.h"
+#include "AgoraRefPtr.h"
 #include "IAgoraService.h"
 #include "NGIAgoraMediaNodeFactory.h"
 
@@ -17,17 +17,18 @@ namespace agora {
 namespace rtc {
 class IAudioTrackStateObserver;
 
-// AudioSinkWants is used for notifying the source of properties a audio frame
-// should have when it is delivered to a certain sink.
+/**
+ * This struct notifies the source of the properties of audio frames to be sent to a sink.
+ */
 struct AudioSinkWants {
   AudioSinkWants() = default;
   AudioSinkWants(const AudioSinkWants&) = default;
   ~AudioSinkWants() = default;
 
-  // Tells the source the sample rate the sink wants.
+  /** The sample rate of the audio frame to be sent to the sink. */
   int samplesPerSec;
 
-  // Tells the source the number of audio channels the sink wants.
+  /** The number of audio channels of the audio frame to be sent to the sink. */
   size_t channels;
 };
 
@@ -45,8 +46,8 @@ public:
 
  public:
   /**
-   * Adjusts the playout volume.
-   * @param volume The playout volume. The value ranges between 0 and 100 (default).
+   * Adjusts the playback volume.
+   * @param volume The playback volume. The value ranges between 0 and 100 (default).
    * @return
    * - 0: Success.
    * - < 0: Failure.
@@ -54,8 +55,8 @@ public:
   virtual int adjustPlayoutVolume(int volume) = 0;
 
   /**
-   * Gets the current playout volume.
-   * @param volume A pointer to the playout volume.
+   * Gets the current playback volume.
+   * @param volume A pointer to the playback volume.
    * @return
    * - 0: Success.
    * - < 0: Failure.
@@ -67,20 +68,20 @@ public:
    *
    * By adding an audio filter, you can apply various audio effects to the audio, for example, voice change.
    * @param filter A pointer to the audio filter: IAudioFilter.
-   * @param position The position of the audio filter: AudioFilterPosition.
+   * @param position The position of the audio filter: #AudioFilterPosition.
    * @return
-   * - true: Success.
-   * - false: Failure.
+   * - `true`: Success.
+   * - `false`: Failure.
    */
   virtual bool addAudioFilter(agora_refptr<IAudioFilter> filter, AudioFilterPosition position) = 0;
   /**
-   * Removes the audio filter added by using addAudioFilter().
+   * Removes the audio filter added by callling `addAudioFilter`.
    *
    * @param filter The pointer to the audio filter that you want to remove: IAudioFilter.
-   * @param position The position of the audio filter: AudioFilterPosition.
+   * @param position The position of the audio filter: #AudioFilterPosition.
    * @return
-   * - true: Success.
-   * - false: Failure.
+   * - `true`: Success.
+   * - `false`: Failure.
    */
   virtual bool removeAudioFilter(agora_refptr<IAudioFilter> filter, AudioFilterPosition position) = 0;
 
@@ -90,55 +91,50 @@ public:
    * @param name The name of the audio filter.
    * @return
    * - The pointer to the audio filter, if the method call succeeds.
-   * - nullptr, if the method call fails.
+   * - A null pointer, if the method call fails.
    */
   virtual agora_refptr<IAudioFilter> getAudioFilter(const char *name) const = 0;
 
-  /** Add audio sink to get PCM data from audio track.
+  /**
+   * Adds an audio sink to get PCM data from the audio track.
    *
-   * @param sink A pointer to the audio sink: IAudioSinkBase
-   * @param wants The properties a audio frame should have when it is delivered to a the sink
+   * @param sink The pointer to the audio sink: IAudioSinkBase.
+   * @param wants The properties an audio frame should have when it is delivered to the sink. See AudioSinkWants.
    * @return
-   * - true: Success.
-   * - false: Failure.
+   * - `true`: Success.
+   * - `false`: Failure.
    */
   virtual bool addAudioSink(agora_refptr<IAudioSinkBase> sink, const AudioSinkWants& wants) = 0;
 
-  /** Remove audio sink */
+  /**
+   * Removes an audio sink.
+   *
+   * @param sink The pointer to the audio sink to be removed: IAudioSinkBase.
+   * @return
+   * - `true`: Success.
+   * - `false`: Failure.
+   */
   virtual bool removeAudioSink(agora_refptr<IAudioSinkBase> sink) = 0;
 };
 
 /**
- * Statistics of the local audio track.
- */
-struct LocalAudioTrackStats {
-  /** The number of channels.
-  */
-  int num_channels;
-  /** The sample rate (Hz).
-   */
-  int sent_sample_rate;
-  /** The average sending bitrate (Kbps).
-   */
-  int sent_bitrate;
-};
-
-/**
- * The ILocalAudioTrack class.
+ * `ILocalAudioTrack` is the basic class for local audio tracks, providing main methods of local audio tracks.
  *
- * A local audio track can be created by \ref agora::base::IAgoraService::createLocalAudioTrack
- * "IAgoraService::createLocalAudioTrack". It originates from the default audio recording
- * device, that is, the built-in microphone. You can also use the APIs we provide in the
- * \ref agora::rtc::INGAudioDeviceManager "IAudioDeviceManager" class if multiple recording
- * devices are available in the system.
+ * You can create a local audio track by calling one of the following methods:
+ * - `createLocalAudioTrack`
+ * - `createCustomAudioTrack`
+ * - `createMediaPlayerAudioTrack`
+ * @if (!Linux)
+ * You can also use the APIs in the \ref agora::rtc::INGAudioDeviceManager "IAudioDeviceManager" class if multiple recording devices are available in the system.
+ * @endif
  *
- * After the local audio track is created, you can publish one or multiple local audio
- * tracks using \ref agora::rtc::ILocalUser::publishAudio "ILocalUser::publishAudio".
+ * After creating local audio tracks, you can publish one or more local audio
+ * tracks by calling \ref agora::rtc::ILocalUser::publishAudio "publishAudio".
  */
 class ILocalAudioTrack : public IAudioTrack {
  public:
   /**
-   * The struct of LocalAudioTrackStats.
+   * Statistics of a local audio track.
    */
   struct LocalAudioTrackStats {
     /**
@@ -146,7 +142,6 @@ class ILocalAudioTrack : public IAudioTrack {
      */
     uint32_t source_id;
     uint32_t buffered_pcm_data_list_size;
-    uint32_t free_pcm_data_list_size;
     uint32_t missed_audio_frames;
     uint32_t sent_audio_frames;
     uint32_t pushed_audio_frames;
@@ -158,19 +153,19 @@ class ILocalAudioTrack : public IAudioTrack {
   /**
    * Enables or disables the local audio track.
    *
-   * Once enabled, the SDK allows for local audio capturing, processing, and encoding.
+   * Once the local audio is enabled, the SDK allows for local audio capturing, processing, and encoding.
    *
-   * @param enable Determines whether to enable the audio track:
-   * - true: Enable the local audio track.
-   * - false: Disable the local audio track.
+   * @param enable Whether to enable the audio track:
+   * - `true`: Enable the local audio track.
+   * - `false`: Disable the local audio track.
    */
   virtual void setEnabled(bool enable) = 0;
 
   /**
    * Gets whether the local audio track is enabled.
-   * @return The enable state of the local audio track:
-   * - true: The local track is enabled.
-   * - false: The local track is not enabled.
+   * @return Whether the local audio track is enabled:
+   * - `true`: The local track is enabled.
+   * - `false`: The local track is not enabled.
    */
   virtual bool isEnabled() const = 0;
 
@@ -189,13 +184,13 @@ class ILocalAudioTrack : public IAudioTrack {
   /**
    * Adjusts the audio volume for publishing.
    *
-   * @param volume The volume for publishing.  The value ranges between 0 and 100 (default).
+   * @param volume The volume for publishing. The value ranges between 0 and 100 (default).
    * @return
    * - 0: Success.
    * - < 0: Failure.
    */
   virtual int adjustPublishVolume(int volume) = 0;
-  
+
   /**
    * Gets the current volume for publishing.
    * @param volume A pointer to the publishing volume.
@@ -207,19 +202,22 @@ class ILocalAudioTrack : public IAudioTrack {
 
   /**
    * Enables or disables local playback.
-   * @param enable Determines whether to enable local playback:
-   * - true: Enable local playback.
-   * - false: Disable local playback.
+   * @param enable Whether to enable local playback:
+   * - `true`: Enable local playback.
+   * - `false`: Disable local playback.
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
    */
   virtual int enableLocalPlayback(bool enable) = 0;
   /**
-   * Enables or disables ear monitor.
-   * @param enable Determines whether to enable ear monitor:
-   * - true: Enable ear monitor.
-   * - false: Do not enable ear monitor.
-   * @param includeAudioFilter Determines whether to add audio filter to the ear monitor.
-   * - true: Add audio filter.
-   * - false: Do not add audio filter.
+   * Enables or disables in-ear monitor.
+   * @param enable Whether to enable in-ear monitor:
+   * - `true`: Enable in-ear monitor.
+   * - `false`: Do not enable in-ear monitor.
+   * @param includeAudioFilter Whether to add an audio filter to the in-ear monitor.
+   * - `true`: Add an audio filter.
+   * - `false`: Do not add an audio filter.
    * @return
    * - 0: Success.
    * - < 0: Failure.
@@ -231,52 +229,51 @@ class ILocalAudioTrack : public IAudioTrack {
 };
 
 /**
- * The struct of RemoteAudioTrackStats.
+ * Statistics of a remote audio track.
  */
 struct RemoteAudioTrackStats {
   /**
-   * User ID of the remote user sending the audio streams.
+   * The user ID of the remote user who sends the audio track.
    */
-  uid_t uid;
+  uid_t uid = 0;
   /**
-   * Audio quality received by the user: #QUALITY_TYPE.
+   * The audio quality of the remote audio track: #QUALITY_TYPE.
    */
-  int quality;
+  int quality = 0;
   /**
-   * @return Network delay (ms) from the sender to the receiver.
+   * The network delay (ms) from the sender to the receiver.
    */
-  int network_transport_delay;
+  int network_transport_delay = 0;
   /**
-   * @return Network delay (ms) from the receiver to the jitter buffer.
+   * The delay (ms) from the receiver to the jitter buffer.
    */
-  int jitter_buffer_delay;
+  int jitter_buffer_delay = 0;
   /**
    * The audio frame loss rate in the reported interval.
    */
-  int audio_loss_rate;
+  int audio_loss_rate = 0;
   /**
-   * The number of channels.
+   * The number of audio channels.
    */
-  int num_channels;
+  int num_channels = 0;
   /**
-   * The sample rate (Hz) of the received audio stream in the reported interval.
+   * The sample rate (Hz) of the received audio track in the reported interval.
    */
-  int received_sample_rate;
+  int received_sample_rate = 0;
   /**
-   * The average bitrate (Kbps) of the received audio stream in the reported interval.
+   * The average bitrate (Kbps) of the received audio track in the reported interval.
    * */
-  int received_bitrate;
+  int received_bitrate = 0;
   /**
-   * The total freeze time (ms) of the remote audio stream after the remote user joins the channel.
+   * The total freeze time (ms) of the remote audio track after the remote user joins the channel.
    * In a session, audio freeze occurs when the audio frame loss rate reaches 4%.
-   * Agora uses 2 seconds as an audio piece unit to calculate the audio freeze time.
-   * The total audio freeze time = The audio freeze number &times; 2 seconds
+   * The total audio freeze time = The audio freeze number × 2 seconds.
    */
-  int total_frozen_time;
+  int total_frozen_time = 0;
   /**
    * The total audio freeze time as a percentage (%) of the total time when the audio is available.
    * */
-  int frozen_rate;
+  int frozen_rate = 0;
   /**
    * The number of audio bytes received.
    */
@@ -292,8 +289,8 @@ class IRemoteAudioTrack : public IAudioTrack {
    * Gets the statistics of the remote audio track.
    * @param stats A reference to the statistics of the remote audio track: RemoteAudioTrackStats.
    * @return
-   * - true: Success.
-   * - false: Failure.
+   * - `true`: Success.
+   * - `false`: Failure.
    */
   virtual bool getStatistics(RemoteAudioTrackStats& stats) = 0;
 
@@ -302,24 +299,24 @@ class IRemoteAudioTrack : public IAudioTrack {
    * @return The state of the remote audio: #REMOTE_AUDIO_STATE, if the method call succeeds.
    */
   virtual REMOTE_AUDIO_STATE getState() = 0;
-  
+
   /**
-   * Registers an IMediaPacketReceiver object.
+   * Registers an `IMediaPacketReceiver` object.
    *
-   * You need to implement the IMediaPacketReceiver class in this method. Once you successfully register
-   * the media packet receiver, the SDK triggers the onMediaPacketReceived callback when it receives the
+   * You need to implement the `IMediaPacketReceiver` class in this method. Once you successfully register
+   * the media packet receiver, the SDK triggers the `onMediaPacketReceived` callback when it receives an
    * audio packet.
    *
-   * @param packetReceiver The pointer to the IMediaPacketReceiver object.
+   * @param packetReceiver The pointer to the `IMediaPacketReceiver` object.
    * @return
    * - 0: Success.
    * - < 0: Failure.
    */
   virtual int registerMediaPacketReceiver(IMediaPacketReceiver* packetReceiver) = 0;
-  
+
   /**
-   * Releases the IMediaPacketReceiver object.
-   * @param packetReceiver The pointer to the IMediaPacketReceiver object.
+   * Releases the `IMediaPacketReceiver` object.
+   * @param packetReceiver The pointer to the `IMediaPacketReceiver` object.
    * @return
    * - 0: Success.
    * - < 0: Failure.

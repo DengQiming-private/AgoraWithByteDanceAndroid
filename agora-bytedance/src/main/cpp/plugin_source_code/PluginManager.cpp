@@ -6,7 +6,6 @@
 
 namespace agora {
     namespace extension {
-
         int PluginManager::loadPlugin() {
             agoraService_ = createAgoraService();
             CHECK_AGORA_SERVICE;
@@ -21,7 +20,7 @@ namespace agora {
             int ret = agoraService_->getExtensionControl()->unregisterExtensionProvider("bytedance");
             return ret;
         }
-
+    
         int PluginManager::setParameters(std::string parameter) {
             byteDanceProcessor_->setParameters(parameter);
             return 0;

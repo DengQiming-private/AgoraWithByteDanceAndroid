@@ -159,13 +159,14 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             });
 
             setupLocalVideo();
-            boolean s = RtcEngineImpl.loadExtension("native-lib");
+
             mRtcEngine.setChannelProfile(Constants.CHANNEL_PROFILE_LIVE_BROADCASTING);
             mRtcEngine.setClientRole(Constants.CLIENT_ROLE_BROADCASTER);
             mRtcEngine.setParameters("{\"rtc.log_filter\": 65535}");
             mRtcEngine.enableLocalVideo(true);
             mRtcEngine.enableVideo();
             mRtcEngine.enableAudio();
+            boolean s = RtcEngineImpl.loadExtension("native-lib");
             mRtcEngine.enableLocalVideoFilter("agora", "bytedance", true);
             Log.d(TAG, "api call join channel");
             mRtcEngine.joinChannel("", "agora_test", "", 0);

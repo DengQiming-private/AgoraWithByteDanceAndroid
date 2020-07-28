@@ -6,8 +6,8 @@
 
 #pragma once  // NOLINT(build/header_guard)
 
-#include "../AgoraBase.h"
-#include "../AgoraRefPtr.h"
+#include "AgoraBase.h"
+#include "AgoraRefPtr.h"
 #include "IAgoraService.h"
 
 namespace agora {

@@ -1,15 +1,17 @@
 #include <jni.h>
 #include <string>
-#include "agora/api2/IAgoraService.h"
+//#include "AgoraRtcKit/IAgoraService.h"
 #include "plugin_source_code/ExtensionProvider.h"
 #include "logutils.h"
 #include "plugin_source_code/JniHelper.h"
-#include "agora/AgoraRefPtr.h"
+//#include "AgoraRtcKit/AgoraRefPtr.h"
 #include "plugin_source_code/PluginManager.h"
 #include "plugin_source_code/JniHelper.h"
+#include "plugin_source_code/EGLCore.h"
 
 using namespace agora::extension;
-static PluginManager* pluginManager = NULL;
+static PluginManager* pluginManager = nullptr;
+static EglCore* eglCore = nullptr;
 
 #define CHECK_PLUGIN_MANAGER_INT if(!pluginManager) { \
                                 PRINTF_ERROR("Agora extension call api: %s err: %d", __FUNCTION__, ERROR_CODE::ERR_NOT_INIT_PLUGIN_MANAGER); \
@@ -108,14 +110,30 @@ Java_io_agora_extension_AgoraByteDanceNative_releaseContext(
     return ERROR_CODE::ERROR_OK;
 }
 
-void dataCallback(std::string data) {
+extern "C" void initGL() {
+//    if (!eglCore) {
+//        eglCore = new EglCore();
+//        eglCore->makeCurrent();
+//    }
+}
+extern "C" void releaseGL() {
+//    if (eglCore) {
+//        delete eglCore;
+//        eglCore = nullptr;
+//    }
+}
+extern "C" void makeCurrent() {
+//    if (eglCore) {
+//        eglCore->makeCurrent();
+//    }
+}
+extern "C" void dataCallback(const char * data) {
     JniHelper * jniHelper = JniHelper::getJniHelper();
     JNIEnv* env = jniHelper->attachCurrentTnread();
     if (env != nullptr) {
         jmethodID onDataCallbackFunc = env->GetStaticMethodID(jniHelper->agoraByteDanceNativeClz, "onDataCallback", "(Ljava/lang/String;)V");
-        jstring javaMsg = env->NewStringUTF(data.c_str());
+        jstring javaMsg = env->NewStringUTF(data);
         env->CallStaticVoidMethod(jniHelper->agoraByteDanceNativeClz, onDataCallbackFunc, javaMsg);
         env->DeleteLocalRef(javaMsg);
     }
-
 }

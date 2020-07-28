@@ -9,7 +9,18 @@
 #include <stdint.h>
 
 namespace agora {
-namespace commons {
+namespace commons { 
+/**
+ * Supported logging severities of SDK
+ */
+enum class LOG_LEVEL {
+  LOG_LEVEL_NONE = 0x0000,
+  LOG_LEVEL_INFO = 0x0001,
+  LOG_LEVEL_WARN = 0x0002,
+  LOG_LEVEL_ERROR = 0x0004,
+  LOG_LEVEL_FATAL = 0x0008,
+};
+
 /*
 The SDK uses ILogWriter class Write interface to write logs as application
 The application inherits the methods Write() to implentation their own  log writ
@@ -27,7 +38,7 @@ class ILogWriter {
    - 0: success
    - <0: failure
   */
-  virtual int32_t writeLog(uint32_t level, const char* message, uint16_t length) = 0;
+  virtual int32_t writeLog(LOG_LEVEL level, const char* message, uint16_t length) = 0;
   virtual ~ILogWriter() {}
 };
 

@@ -6,8 +6,8 @@
 
 #pragma once  // NOLINT(build/header_guard)
 
-#include "../AgoraBase.h"
-#include "../AgoraRefPtr.h"
+#include "AgoraBase.h"
+#include "AgoraRefPtr.h"
 
 namespace agora {
 namespace rtc {
@@ -20,33 +20,6 @@ class IVideoRenderer;
 class ICameraCapturer : public RefCountInterface {
 
  public:
-  /**
-   * The state of the camera capturer.
-   */
-  enum CAPTURE_STATE {
-    /**
-     * The camera capturer has stopped or has not started yet.
-     */
-    CAPTURE_STATE_STOPPED,
-    /**
-     * The camera capturer is in the process of starting. This state does not necessarily mean that the capturer
-     * has successfully started.
-     */
-    CAPTURE_STATE_STARTING,
-    /**
-     * The camera capturer has started successfully and is now capturing video data.
-     */
-    CAPTURE_STATE_RUNNING,
-    /**
-     * The camera capturer is in the process of stopping. This state does not necessarily mean that the capturer
-     * has successfully stopped.
-     */
-    CAPTURE_STATE_STOPPING,
-    /**
-     * The camera capturer fails to start.
-     */
-    CAPTURE_STATE_FAILED,
-  };
   /**
    * The camera source.
    */
@@ -142,17 +115,6 @@ class ICameraCapturer : public RefCountInterface {
    * @return The camera source: #CAMERA_SOURCE.
    */
   virtual CAMERA_SOURCE getCameraSource() = 0;
-  /**
-   * Switches the camera source, for example, from the front camera, to the rear camera.
-   *
-   * @note
-   * This method applies to Android and iOS only.
-   *
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-  virtual int switchCamera() = 0;
 #elif defined(_WIN32) || (defined(__APPLE__) && !TARGET_OS_IPHONE && TARGET_OS_MAC) || \
     (defined(__linux__) && !defined(__ANDROID__))
 
@@ -200,48 +162,15 @@ class ICameraCapturer : public RefCountInterface {
    * @param capture_format The reference to the video format: VideoFormat.
    */
   virtual void setCaptureFormat(const VideoFormat& capture_format) = 0;
-
   /**
    * Gets the format of the video captured by the camera.
    * @return
    * VideoFormat.
    */
   virtual VideoFormat getCaptureFormat() = 0;
-  /**
-   * Gets the state of the camera capture.
-   * @return
-   * The capture state: #CAPTURE_STATE.
-   */
-  virtual CAPTURE_STATE getCaptureState() = 0;
-  /**
-   * Registers a camera capture observer object.
-   * @param observer The pointer to ICameraCaptureObserver.
-   */
-  virtual void registerCameraCaptureObserver(ICameraCaptureObserver* observer) = 0;
-  /**
-   * Releases the camera capture observer object.
-   * @param observer The pointer to ICameraCaptureObserver.
-   */
-  virtual void unregisterCameraCaptureObserver(ICameraCaptureObserver* observer) = 0;
 
  protected:
   ~ICameraCapturer() {}
-};
-
-/**
- * The ICameraCaptureObserver class, which contains the callback that reports the state change of the camera capture.
- */
-class ICameraCaptureObserver {
- public:
-  virtual ~ICameraCaptureObserver() {}
-
-  /**
-   * Occurs when the state of the camera capture changes.
-   * @param state The current state of the camera capture: \ref ICameraCapture::CAPTURE_STATE "CAPTURE_STATE".
-   * @param error The error code: #ERROR_CODE_TYPE.
-   */
-  virtual void onCaptureStateChanged(ICameraCapturer::CAPTURE_STATE state,
-                                     ERROR_CODE_TYPE error) = 0;
 };
 
 }  // namespace rtc

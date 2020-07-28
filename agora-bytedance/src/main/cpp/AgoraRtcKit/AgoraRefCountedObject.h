@@ -7,7 +7,7 @@
 // of Agora.io.
 #pragma once
 #include <atomic>
-#include "../AgoraRefPtr.h"
+#include "AgoraRefPtr.h"
 
 namespace agora {
 class RefCounter {

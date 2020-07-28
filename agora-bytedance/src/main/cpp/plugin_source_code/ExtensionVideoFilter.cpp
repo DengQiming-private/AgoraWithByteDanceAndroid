@@ -4,6 +4,7 @@
 
 #include "ExtensionVideoFilter.h"
 #include "../logutils.h"
+#include <sstream>
 
 namespace agora {
     namespace extension {
@@ -17,15 +18,16 @@ namespace agora {
         }
 
         void ExtensionVideoFilter::setEnabled(bool enable) {
+            int a = 10;
 
         }
 
         bool ExtensionVideoFilter::isEnabled() {
-            return false;
+            return true;
         }
 
-        bool ExtensionVideoFilter::adaptVideoFrame(const agora::media::VideoFrame &capturedFrame,
-                                                   agora::media::VideoFrame &adaptedFrame) {
+        bool ExtensionVideoFilter::adaptVideoFrame(const agora::media::base::VideoFrame &capturedFrame,
+                                                   agora::media::base::VideoFrame &adaptedFrame) {
 //            PRINTF_INFO("adaptVideoFrame");
             byteDanceProcessor_->processFrame(capturedFrame);
             adaptedFrame = capturedFrame;
@@ -43,7 +45,7 @@ namespace agora {
 
         bool ExtensionVideoFilter::onDataStreamWillStart() {
             PRINTF_INFO("ExtensionVideoFilter::onDataStreamWillStart");
-            byteDanceProcessor_->initOpenGL();
+//            byteDanceProcessor_->initOpenGL();
             return true;
         }
 
