@@ -87,3 +87,5 @@ app/src/main/assets/resource
 app/libs
 
 *.so
+agora-bytedance/src/main/assets/resource
+*.jar
