@@ -31,7 +31,7 @@ namespace agora {
     namespace extension {
         using namespace rapidjson;
         bool ByteDanceProcessor::initOpenGL() {
-//            const std::lock_guard<std::mutex> lock(mutex_);
+            const std::lock_guard<std::mutex> lock(mutex_);
             initGL();
 
 #if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
@@ -451,7 +451,6 @@ namespace agora {
         int ByteDanceProcessor::processFrame(const agora::media::base::VideoFrame &capturedFrame) {
             const std::lock_guard<std::mutex> lock(mutex_);
 
-            initOpenGL();
             if (aiEffectEnabled_ || faceAttributeEnabled_) {
                 prepareCachedVideoFrame(capturedFrame);
             }

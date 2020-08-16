@@ -7,7 +7,8 @@ import androidx.annotation.Keep;
 import java.io.File;
 import java.io.IOException;
 
-public class AgoraByteDanceNative {
+@Keep
+public class AgoraPluginManager {
     public static native int setContext(Context context);
     public static native int setParameters(String parameters);
     public static native int releaseContext();

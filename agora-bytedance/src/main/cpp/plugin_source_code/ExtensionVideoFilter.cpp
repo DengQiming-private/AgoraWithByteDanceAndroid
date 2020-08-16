@@ -45,7 +45,7 @@ namespace agora {
 
         bool ExtensionVideoFilter::onDataStreamWillStart() {
             PRINTF_INFO("ExtensionVideoFilter::onDataStreamWillStart");
-//            byteDanceProcessor_->initOpenGL();
+            byteDanceProcessor_->initOpenGL();
             return true;
         }
 

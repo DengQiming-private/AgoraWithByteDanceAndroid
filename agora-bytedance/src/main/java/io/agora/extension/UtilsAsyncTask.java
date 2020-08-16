@@ -21,7 +21,7 @@ public class UtilsAsyncTask extends AsyncTask {
     @Override
     protected Object doInBackground(Object[] objects) {
         Log.d("Agora_zt", " doInBackground");
-        AgoraByteDanceNative.copyResource(context);
+        AgoraPluginManager.copyResource(context);
         return null;
     }
 

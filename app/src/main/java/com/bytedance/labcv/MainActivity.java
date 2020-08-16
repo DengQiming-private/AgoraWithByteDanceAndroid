@@ -24,7 +24,7 @@ import org.json.JSONObject;
 import java.io.File;
 
 import io.agora.extension.AgoraByteDanceDataReceiver;
-import io.agora.extension.AgoraByteDanceNative;
+import io.agora.extension.AgoraPluginManager;
 import io.agora.extension.ResourceHelper;
 import io.agora.extension.UtilsAsyncTask;
 import io.agora.rtc2.Constants;
@@ -73,13 +73,13 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             infoTextView.setText("Resource is ready");
             initEffectEngine();
         }
-        AgoraByteDanceNative.dataReceiver = this;
+        AgoraPluginManager.dataReceiver = this;
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        AgoraByteDanceNative.dataReceiver = null;
+        AgoraPluginManager.dataReceiver = null;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -170,6 +170,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             mRtcEngine.enableLocalVideoFilter("agora", "bytedance", true);
             Log.d(TAG, "api call join channel");
             mRtcEngine.joinChannel("", "agora_test", "", 0);
+            mRtcEngine.startPreview();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -265,14 +266,14 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
 //            arr.put(node4);
             o.put("plugin.bytedance.ai.composer.nodes", arr);
 
-            AgoraByteDanceNative.setParameters(o.toString());
+            AgoraPluginManager.setParameters(o.toString());
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
 
     private void initEffectEngine() {
-        AgoraByteDanceNative.setContext(this);
+        AgoraPluginManager.setContext(this);
 
     }
 
