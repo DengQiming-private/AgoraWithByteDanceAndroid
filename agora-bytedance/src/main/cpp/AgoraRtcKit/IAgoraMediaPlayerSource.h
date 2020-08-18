@@ -236,9 +236,14 @@ class IMediaPlayerSourceObserver {
    * @brief Triggered when meta data is obtained
    *
    * @param data meta data
-   * @param length  meta data length
+   * @param length meta data length
    */
   virtual void onMetaData(const void* data, int length) = 0;
+
+  /**
+   * @brief Triggered when media file are played once
+   */
+  virtual void onCompleted() = 0;
 };
 
 } //namespace rtc

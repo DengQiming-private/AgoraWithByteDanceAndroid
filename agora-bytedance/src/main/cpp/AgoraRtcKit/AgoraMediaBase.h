@@ -18,6 +18,53 @@ typedef unsigned int conn_id_t;
 
 static const unsigned int DEFAULT_CONNECTION_ID = 0;
 static const unsigned int DUMMY_CONNECTION_ID = (std::numeric_limits<unsigned int>::max)();
+
+/**
+ * Audio routes.
+ */
+enum AudioRoute
+{
+  /**
+   * -1: The default audio route.
+   */
+  ROUTE_DEFAULT = -1,
+  /**
+   * The headset.
+   */
+  ROUTE_HEADSET,
+  /**
+   * The earpiece.
+   */
+  ROUTE_EARPIECE,
+  /**
+   * The headset with no microphone.
+   */
+  ROUTE_HEADSETNOMIC,
+  /**
+   * The speakerphone.
+   */
+  ROUTE_SPEAKERPHONE,
+  /**
+   * The loudspeaker.
+   */
+  ROUTE_LOUDSPEAKER,
+  /**
+   * The Bluetooth headset.
+   */
+  ROUTE_HEADSETBLUETOOTH
+};
+
+struct AudioParameters {
+  int sample_rate;
+  size_t channels;
+  size_t frames_per_buffer;
+
+  AudioParameters()
+      : sample_rate(0),
+        channels(0),
+        frames_per_buffer(0) {}
+};
+
 }  // namespace rtc
 
 namespace media {
@@ -45,6 +92,39 @@ struct PacketOptions {
         audioLevelIndication(127) {}
 };
 
+/**
+ * The struct of AudioPcmFrame.
+ */
+struct AudioPcmFrame {
+  /**
+   * The buffer size of the PCM audio frame.
+   */
+  enum : size_t {
+    // Stereo, 32 kHz, 60 ms (2 * 32 * 60)
+    kMaxDataSizeSamples = 3840,
+    kMaxDataSizeBytes = kMaxDataSizeSamples * sizeof(int16_t),
+  };
+
+  uint32_t capture_timestamp;
+  size_t samples_per_channel_;
+  int sample_rate_hz_;
+  size_t num_channels_;
+  size_t bytes_per_sample;
+  int16_t data_[kMaxDataSizeSamples];
+
+  AudioPcmFrame() :
+    capture_timestamp(0),
+    samples_per_channel_(0),
+    sample_rate_hz_(0),
+    num_channels_(0),
+    bytes_per_sample(0) {}
+};
+
+class IAudioFrameObserver {
+ public:
+  virtual void onFrame(const AudioPcmFrame* frame) = 0;
+  virtual ~IAudioFrameObserver() {}
+};
 
 /**
  * Video pixel formats.
@@ -63,9 +143,9 @@ enum VIDEO_PIXEL_FORMAT {
    */
   VIDEO_PIXEL_BGRA = 2,
   /**
-   * 3: NV21.
+   * 3: I422.
    */
-  VIDEO_PIXEL_NV21 = 3,
+  VIDEO_PIXEL_I422 = 3,
   /**
    * 4: RGBA.
    */
@@ -74,10 +154,6 @@ enum VIDEO_PIXEL_FORMAT {
    * 8: NV12.
    */
   VIDEO_PIXEL_NV12 = 8,
-  /**
-   * 16: I422.
-   */
-  VIDEO_PIXEL_I422 = 16,
 };
 
 /**
@@ -226,43 +302,10 @@ struct VideoFrame {
   int avsync_type;
 };
 
-
-/**
- * The struct of AudioPcmFrame.
- */
-struct AudioPcmFrame {
-  /**
-   * The buffer size of the PCM audio frame.
-   */
-  enum : size_t {
-    // Stereo, 32 kHz, 60 ms (2 * 32 * 60)
-    kMaxDataSizeSamples = 3840,
-    kMaxDataSizeBytes = kMaxDataSizeSamples * sizeof(int16_t),
-  };
-
-  AudioPcmFrame() {}
-
-  uint32_t capture_timestamp = 0;
-  size_t samples_per_channel_ = 0;
-  int sample_rate_hz_ = 0;
-  size_t num_channels_ = 0;
-  size_t bytes_per_sample = 0;
-  int16_t data_[kMaxDataSizeSamples] = {0};
-
-  AudioPcmFrame(const AudioPcmFrame& frame) = delete;
-  void operator=(const AudioPcmFrame& frame) = delete;
-};
-
 class IVideoFrameObserver {
  public:
   virtual void onFrame(const VideoFrame* frame) = 0;
   virtual ~IVideoFrameObserver() {}
-};
-
-class IAudioFrameObserver {
- public:
-  virtual void onFrame(const AudioPcmFrame* frame) = 0;
-  virtual ~IAudioFrameObserver() {}
 };
 
 enum MEDIA_PLAYER_SOURCE_TYPE {
@@ -442,43 +485,5 @@ class IVideoFrameObserver {
   virtual bool isExternal() { return true; }
 };
 }  // namespace media
-
-namespace rtc {
-/**
- * Audio routes.
- */
-enum AudioRoute
-{
-  /**
-   * -1: The default audio route.
-   */
-  ROUTE_DEFAULT = -1,
-  /**
-   * The headset.
-   */
-  ROUTE_HEADSET,
-  /**
-   * The earpiece.
-   */
-  ROUTE_EARPIECE,
-  /**
-   * The headset with no microphone.
-   */
-  ROUTE_HEADSETNOMIC,
-  /**
-   * The speakerphone.
-   */
-  ROUTE_SPEAKERPHONE,
-  /**
-   * The loudspeaker.
-   */
-  ROUTE_LOUDSPEAKER,
-  /**
-   * The Bluetooth headset.
-   */
-  ROUTE_HEADSETBLUETOOTH
-};
-} // namespace rtc
-
 
 }  // namespace agora

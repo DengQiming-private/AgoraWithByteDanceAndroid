@@ -48,26 +48,6 @@
 */
 #define KEY_RTC_AUDIO_RESEND                         "rtc.audio_resend"
 
-/**
-  * enable/disable agora aec logic, enabled by default
-*/
-#define KEY_RTC_AUDIO_ENABLE_AGORA_AEC               "rtc.audio.aec.enable"
-
-/**
-  * enable/disable agora agc logic, enabled by default
-*/
-#define KEY_RTC_AUDIO_ENABLE_AGORA_AGC               "rtc.audio.agc.enable"
-
-/**
-  * enable/disable agora ans logic, enabled by default
-*/
-#define KEY_RTC_AUDIO_ENABLE_AGORA_ANS               "rtc.audio.ans.enable"
-
-/**
-  * enable/disable agora md logic, enabled by default
-*/
-#define KEY_RTC_AUDIO_ENABLE_AGORA_MD                "rtc.audio.md.enable"
-
 namespace agora {
 
 namespace util {

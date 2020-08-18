@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef AGORA_OPTIONAL_H_
-#define AGORA_OPTIONAL_H_
+#ifndef BASE_OPTIONAL_H_
+#define BASE_OPTIONAL_H_
 
 #include <type_traits>
 #include <utility>
@@ -704,4 +704,4 @@ struct hash<agora::base::Optional<T>> {
 
 }  // namespace std
 
-#endif  // AGORA_OPTIONAL_H_
+#endif  // BASE_OPTIONAL_H_

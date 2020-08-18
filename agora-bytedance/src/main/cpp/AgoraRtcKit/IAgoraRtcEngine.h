@@ -8,7 +8,6 @@
 #define AGORA_RTC_ENGINE_H
 
 #include "AgoraBase.h"
-#include "AgoraOptional.h"
 #include "IAgoraLog.h"
 
 /** Gets the SDK version number.
@@ -412,7 +411,6 @@ struct VideoCompositingLayout {
     /** User ID of the user whose video is to be displayed in the region.
      */
     uid_t uid;
-    user_id_t userId;
     /** Horizontal position of the region on the screen.
      */
     double x;  // [0,1]
@@ -439,7 +437,6 @@ struct VideoCompositingLayout {
     renderMode;  // RENDER_MODE_HIDDEN: Crop, RENDER_MODE_FIT: Zoom to fit
     Region()
         : uid(0),
-          userId(NULL),
           x(0),
           y(0),
           width(0),
@@ -621,90 +618,105 @@ struct PublisherConfiguration {
 struct ChannelMediaOptions {
   /**
    * Determines whether to publish the video of the camera track.
-   * - true: Publish the video track of the camera capturer.
-   * - false: (Default) Do not publish the video track of the camera capturer.
+   * - true: (Default) Publish the video track of the camera capturer.
+   * - false: Do not publish the video track of the camera capturer.
    */
-  base::Optional<bool> publishCameraTrack;
-  /**
-   * Determines whether to publish the recorded audio.
-   * - true: Publish the recorded audio.
-   * - false: (Default) Do not publish the recorded audio.
-   */
-  base::Optional<bool> publishAudioTrack;
+  bool publishCameraTrack;
   /**
    * Determines whether to publish the video of the screen track.
    * - true: Publish the video track of the screen capturer.
    * - false: (Default) Do not publish the video track of the screen capturer.
    */
-  base::Optional<bool> publishScreenTrack;
+  bool publishScreenTrack;
   /**
    * Determines whether to publish the audio of the custom audio track.
    * - true: Publish the audio of the custom audio track.
    * - false: (Default) Do not publish the audio of the custom audio track.
    */
-  base::Optional<bool> publishCustomAudioTrack;
+  bool publishCustomAudioTrack;
   /**
    * Determines whether to publish the video of the custom video track.
    * - true: Publish the video of the custom video track.
    * - false: (Default) Do not publish the video of the custom video track.
    */
-  base::Optional<bool> publishCustomVideoTrack;
+  bool publishCustomVideoTrack;
   /**
    * Determines whether to publish the video of the encoded video track.
    * - true: Publish the video of the encoded video track.
    * - false: (default) Do not publish the video of the encoded video track.
    */
-  base::Optional<bool> publishEncodedVideoTrack;
+  bool publishEncodedVideoTrack;
   /**
   * Determines whether to publish the audio track of media player source.
   * - true: Publish the audio track of media player source.
   * - false: (default) Do not publish the audio track of media player source.
   */
-  base::Optional<bool> publishMediaPlayerAudioTrack;
+  bool publishMediaPlayerAudioTrack;
   /**
   * Determines whether to publish the video track of media player source.
   * - true: Publish the video track of media player source.
   * - false: (default) Do not publish the video track of media player source.
   */
-  base::Optional<bool> publishMediaPlayerVideoTrack;
+  bool publishMediaPlayerVideoTrack;
+  /**
+  * Determines which media player source should be published.
+  * - DEFAULT_PLAYER_ID(0) is default.
+  */
+  int publishMediaPlayerId ;
+  /**
+   * Determines whether to publish the recorded audio.
+   * - true: (Default) Publish the recorded audio.
+   * - false: Do not publish the recorded audio.
+   */
+  bool publishAudioTrack;
   /**
    * Determines whether to subscribe to all audio streams automatically. It can replace calling \ref IRtcEngine::setDefaultMuteAllRemoteAudioStreams
    * "setDefaultMuteAllRemoteAudioStreams" before joining a channel.
-   * - true: Subscribe to all audio streams automatically.
-   * - false: (Default) Do not subscribe to any audio stream automatically.
+   * - true: (Default) Subscribe to all audio streams automatically.
+   * - false: Do not subscribe to any audio stream automatically.
    */
-  base::Optional<bool> autoSubscribeAudio;
+  bool autoSubscribeAudio;
   /**
    * Determines whether to subscribe to all video streams automatically. It can replace calling \ref IRtcEngine::setDefaultMuteAllRemoteVideoStreams
    * "setDefaultMuteAllRemoteVideoStreams" before joining a channel.
    * - true: Subscribe to all video streams automatically.
    * - false: (Default) do not subscribe to any video stream automatically.
    */
-  base::Optional<bool> autoSubscribeVideo;
-  /**
-  * Determines which media player source should be published.
-  * - DEFAULT_PLAYER_ID(0) is default.
-  */
-  base::Optional<int> publishMediaPlayerId;
+  bool autoSubscribeVideo;
   /**
    * Determines whether to enable audio recording or playout.
    * - true: It's used to publish audio and mix microphone, or subscribe audio and playout
    * - false: It's used to publish extenal audio frame only without mixing microphone, or no need audio device to playout audio either
    */
-  base::Optional<bool> enableAudioRecordingOrPlayout;
+  bool enableAudioRecordingOrPlayout;
   /**
    * The client role type: #CLIENT_ROLE_TYPE.
    */
-  base::Optional<CLIENT_ROLE_TYPE> clientRoleType;
+  CLIENT_ROLE_TYPE clientRoleType;
   /**
    * The default video stream type: #REMOTE_VIDEO_STREAM_TYPE.
    */
-  base::Optional<REMOTE_VIDEO_STREAM_TYPE> defaultVideoStreamType;
+  REMOTE_VIDEO_STREAM_TYPE defaultVideoStreamType;
   /**
    * The channel profile: #CHANNEL_PROFILE_TYPE.
    */
-  base::Optional<CHANNEL_PROFILE_TYPE> channelProfile;
-  ChannelMediaOptions() {}
+  CHANNEL_PROFILE_TYPE channelProfile;
+  ChannelMediaOptions()
+      : publishCameraTrack(true),
+        publishScreenTrack(false),
+        publishCustomAudioTrack(false),
+        publishCustomVideoTrack(false),
+        publishEncodedVideoTrack(false),
+        publishMediaPlayerAudioTrack(false),
+        publishMediaPlayerVideoTrack(false),
+        publishMediaPlayerId(0),
+        publishAudioTrack(true),
+        autoSubscribeAudio(true),
+        autoSubscribeVideo(false),
+        enableAudioRecordingOrPlayout(true),
+        clientRoleType(CLIENT_ROLE_AUDIENCE),
+        defaultVideoStreamType(REMOTE_VIDEO_STREAM_HIGH),
+        channelProfile(CHANNEL_PROFILE_LIVE_BROADCASTING) {}
 
   ChannelMediaOptions& operator=(const ChannelMediaOptions& channelMediaOptions) {
     if (this != &channelMediaOptions) {

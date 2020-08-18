@@ -146,6 +146,7 @@ class ILocalAudioTrack : public IAudioTrack {
     uint32_t sent_audio_frames;
     uint32_t pushed_audio_frames;
     uint32_t dropped_audio_frames;
+    uint32_t effect_type;
     bool enabled;
   };
 
@@ -235,49 +236,67 @@ struct RemoteAudioTrackStats {
   /**
    * The user ID of the remote user who sends the audio track.
    */
-  uid_t uid = 0;
+  uid_t uid;
   /**
    * The audio quality of the remote audio track: #QUALITY_TYPE.
    */
-  int quality = 0;
+  int quality;
   /**
    * The network delay (ms) from the sender to the receiver.
    */
-  int network_transport_delay = 0;
+  int network_transport_delay;
   /**
    * The delay (ms) from the receiver to the jitter buffer.
    */
-  int jitter_buffer_delay = 0;
+  int jitter_buffer_delay;
   /**
    * The audio frame loss rate in the reported interval.
    */
-  int audio_loss_rate = 0;
+  int audio_loss_rate;
   /**
    * The number of audio channels.
    */
-  int num_channels = 0;
+  int num_channels;
   /**
    * The sample rate (Hz) of the received audio track in the reported interval.
    */
-  int received_sample_rate = 0;
+  int received_sample_rate;
   /**
    * The average bitrate (Kbps) of the received audio track in the reported interval.
    * */
-  int received_bitrate = 0;
+  int received_bitrate;
   /**
    * The total freeze time (ms) of the remote audio track after the remote user joins the channel.
    * In a session, audio freeze occurs when the audio frame loss rate reaches 4%.
    * The total audio freeze time = The audio freeze number × 2 seconds.
    */
-  int total_frozen_time = 0;
+  int total_frozen_time;
   /**
    * The total audio freeze time as a percentage (%) of the total time when the audio is available.
    * */
-  int frozen_rate = 0;
+  int frozen_rate;
   /**
    * The number of audio bytes received.
    */
-  int64_t received_bytes = 0;
+  int64_t received_bytes;
+  /**
+   * The average packet waiting time in the jitter buffer (ms)
+   */
+  int mean_waiting_time;
+
+  RemoteAudioTrackStats() :
+    uid(0),
+    quality(0),
+    network_transport_delay(0),
+    jitter_buffer_delay(0),
+    audio_loss_rate(0),
+    num_channels(0),
+    received_sample_rate(0),
+    received_bitrate(0),
+    total_frozen_time(0),
+    frozen_rate(0),
+    received_bytes(0),
+    mean_waiting_time(0) {}
 };
 
 /**

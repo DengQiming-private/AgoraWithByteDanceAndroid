@@ -37,7 +37,8 @@ class IMediaEngine {
    * @note
    * Ensure that you call this method before \ref IRtcEngine::joinChannel "joinChannel".
    *
-   * @param observer A pointer to the audio frame observer object: IAudioFrameObserver.
+   * @param observer A pointer to the audio frame observer object: IAudioFrameObserver,
+   * nullptr means unregistering observer instead.
    * @return
    * - 0: Success.
    * - < 0: Failure.
@@ -184,10 +185,10 @@ class IMediaEngine {
                                     const agora::rtc::EncodedVideoFrameInfo& videoEncodedFrameInfo,
                                     rtc::conn_id_t connectionId = rtc::DEFAULT_CONNECTION_ID) = 0;
 
-  virtual void release() { delete this; }
+  virtual void release() = 0;
 
  protected:
-  virtual ~IMediaEngine(){};
+  virtual ~IMediaEngine() = default;
 };
 
 }  // namespace media

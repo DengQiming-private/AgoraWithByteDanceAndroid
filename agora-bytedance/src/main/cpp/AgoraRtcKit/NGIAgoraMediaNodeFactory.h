@@ -14,12 +14,6 @@
 #include "NGIAgoraVideoMixerSource.h"
 
 namespace agora {
-namespace media {
-namespace base {
-class IAudioFrameObserver;
-} // namespace base
-} // namespace media
-
 namespace rtc {
 
 /**
@@ -593,58 +587,6 @@ class IVideoRenderer : public IVideoSinkBase {
   virtual int unsetView() = 0;
 };
 
-class IRecordingDeviceSource : public RefCountInterface {
-  public:
-  /**
-   * Initialize the recording device source.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-    virtual int initialize() = 0;
-
-  /**
-   * Start recording.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-    virtual int startRecording() = 0;
-
-  /**
-   * Stop recording.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-    virtual int stopRecording() = 0;
-
-  /**
-   * Registers an audio frame observer.
-   *
-   * @param observer The pointer to the IAudioFrameObserver object.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-    virtual int registerAudioPcmDataCallback(media::base::IAudioFrameObserver* dataCallback) = 0;
-
-  /**
-   * Releases the registered IAudioFrameObserver object.
-   *
-   * @param observer The pointer to the IAudioFrameObserver object created by the \ref registerAudioPcmDataCallback
-   * "registerAudioPcmDataCallback" method.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-    virtual int unregisterAudioPcmDataCallback(media::base::IAudioFrameObserver* dataCallback) = 0;
-
-    virtual ~IRecordingDeviceSource() {}
-};
-
-static const int kDeviceIdSize = 128;
-
 /**
  * The `IMediaNodeFactory` class.
  */
@@ -810,16 +752,6 @@ class IMediaNodeFactory : public RefCountInterface {
    * - A null pointer, if the method call fails.
    */
   virtual agora_refptr<IMediaPacketSender> createMediaPacketSender() = 0;
-
-  /**
-   * Creates a audio device source object and returns the pointer.
-   *
-   * @return
-   * - The pointer to \ref rtc::IRecordingDeviceSource "IRecordingDeviceSource", if the method call
-   * succeeds.
-   * - The empty pointer NULL, if the method call fails.
-   */
-  virtual agora_refptr<IRecordingDeviceSource> createRecordingDeviceSource(char deviceId[kDeviceIdSize]) = 0;
 
  protected:
   ~IMediaNodeFactory() {}

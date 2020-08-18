@@ -10,6 +10,12 @@
 #include "AgoraRefPtr.h"
 
 namespace agora {
+namespace media {
+namespace base {
+class IAudioFrameObserver;
+} // namespace base
+} // namespace media
+
 namespace rtc {
 
 static const int kAdmMaxDeviceNameSize = 128;
@@ -81,6 +87,56 @@ public:
   virtual void onRoutingChanged(AudioRoute route) = 0;
 };
 
+class IRecordingDeviceSource : public RefCountInterface {
+  public:
+  /**
+   * Initialize the recording device source.
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+    virtual int initRecording() = 0;
+
+  /**
+   * Start recording.
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+    virtual int startRecording() = 0;
+
+  /**
+   * Stop recording.
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+    virtual int stopRecording() = 0;
+
+  /**
+   * Registers an audio frame observer.
+   *
+   * @param observer The pointer to the IAudioFrameObserver object.
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+    virtual int registerAudioFrameObserver(media::base::IAudioFrameObserver* observer) = 0;
+
+  /**
+   * Releases the registered IAudioFrameObserver object.
+   *
+   * @param observer The pointer to the IAudioFrameObserver object created by the \ref registerAudioPcmDataCallback
+   * "registerAudioPcmDataCallback" method.
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+    virtual int unregisterAudioFrameObserver(media::base::IAudioFrameObserver* observer) = 0;
+
+    virtual ~IRecordingDeviceSource() {}
+};
+
 /**
  * The INGAudioDeciceManager class.
  *
@@ -89,6 +145,16 @@ public:
  */
 class INGAudioDeviceManager : public RefCountInterface {
 public:
+	    /**
+   * Creates a audio device source object and returns the pointer.
+   *
+   * @return
+   * - The pointer to \ref rtc::IRecordingDeviceSource "IRecordingDeviceSource", if the method call
+   * succeeds.
+   * - The empty pointer NULL, if the method call fails.
+   */
+  virtual agora_refptr<IRecordingDeviceSource> createRecordingDeviceSource(char deviceId[kAdmMaxDeviceNameSize]) = 0;
+
   // Volume control
   /**
    * Sets the volume of the microphone.
@@ -158,6 +224,24 @@ public:
    * - < 0: Failure.
    */
   virtual int getSpeakerMute(bool& mute) = 0;
+
+  /**
+   * Get the playout parameters of audio device.
+   * @param params A point to the struct AudioParameters.
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int getPlayoutAudioParameters(AudioParameters* params) const = 0;
+
+  /**
+   * Get the record parameters of audio device.
+   * @param params A point to the struct AudioParameters.
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int getRecordAudioParameters(AudioParameters* params) const = 0;
 
 #if defined(__ANDROID__) || TARGET_OS_IPHONE
   /**

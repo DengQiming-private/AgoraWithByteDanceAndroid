@@ -72,13 +72,16 @@ class AutoPtr {
   typedef T* pointer_type;
 
  public:
-  explicit AutoPtr(pointer_type p = 0) : ptr_(p) {}
+  explicit AutoPtr(pointer_type p = nullptr) : ptr_(p) {}
 
   ~AutoPtr() {
-    if (ptr_) ptr_->release();
+    if (ptr_) {
+      ptr_->release();
+      ptr_ = nullptr;
+    }
   }
 
-  operator bool() const { return ptr_ != (pointer_type)0; }
+  operator bool() const { return (ptr_ != nullptr); }
 
   value_type& operator*() const { return *get(); }
 
@@ -87,23 +90,27 @@ class AutoPtr {
   pointer_type get() const { return ptr_; }
 
   pointer_type release() {
-    pointer_type tmp = ptr_;
+    pointer_type ret = ptr_;
     ptr_ = 0;
-    return tmp;
+    return ret;
   }
 
-  void reset(pointer_type ptr = 0) {
-    if (ptr != ptr_ && ptr_) ptr_->release();
+  void reset(pointer_type ptr = nullptr) {
+    if (ptr != ptr_ && ptr_) {
+      ptr_->release();
+    }
+
     ptr_ = ptr;
   }
 
   template <class C1, class C2>
   bool queryInterface(C1* c, C2 iid) {
-    pointer_type p = NULL;
+    pointer_type p = nullptr;
     if (c && !c->queryInterface(iid, reinterpret_cast<void**>(&p))) {
       reset(p);
     }
-    return p != NULL;
+
+    return (p != nullptr);
   }
 
  private:
@@ -1526,7 +1533,6 @@ enum H264PacketizeMode {
 struct EncodedVideoFrameInfo {
   EncodedVideoFrameInfo()
       : codecType(VIDEO_CODEC_H264),
-        packetizationMode(H264PacketizeMode::NonInterleaved),
         width(0),
         height(0),
         framesPerSecond(0),
@@ -1539,7 +1545,6 @@ struct EncodedVideoFrameInfo {
 
   EncodedVideoFrameInfo(const EncodedVideoFrameInfo& rhs)
       : codecType(rhs.codecType),
-        packetizationMode(rhs.packetizationMode),
         width(rhs.width),
         height(rhs.height),
         framesPerSecond(rhs.framesPerSecond),
@@ -1553,12 +1558,6 @@ struct EncodedVideoFrameInfo {
    * The video codec: #VIDEO_CODEC_TYPE.
    */
   VIDEO_CODEC_TYPE codecType;
-  /**
-   * The packetization mode of the video frame: #H264PacketizeMode.
-   *
-   * This member applies to H.264 only.
-   */
-  H264PacketizeMode packetizationMode;  // Just for H264.
   /**
    * The width (px) of the video.
    */
@@ -2772,7 +2771,6 @@ struct TranscodingUser {
    * User ID of the CDN live streaming.
    */
   uid_t uid;
-  user_id_t userId;
   /**
    * The horizontal position of the top left corner of the video frame.
    */
@@ -2817,7 +2815,6 @@ struct TranscodingUser {
   int audioChannel;
   TranscodingUser()
       : uid(0),
-        userId(NULL),
         x(0),
         y(0),
         width(0),
@@ -3136,20 +3133,31 @@ struct VideoCanvas {
    * The user ID.
    */
   uid_t uid;
-  user_id_t userId;
   void* priv;  // private data (underlying video engine denotes it)
   bool isScreenView;
 
-  VideoCanvas() : view(NULL), renderMode(media::base::RENDER_MODE_HIDDEN), uid(0), userId(NULL), priv(NULL),
+  VideoCanvas() : view(NULL), renderMode(media::base::RENDER_MODE_HIDDEN), uid(0), priv(NULL),
                   isScreenView(false) {}
   VideoCanvas(view_t v, int m, uid_t u)
-      : view(v), renderMode(m), uid(u), userId(NULL), priv(NULL), isScreenView(false) {}
-  VideoCanvas(view_t v, int m, user_id_t u)
-      : view(v), renderMode(m), uid(0), userId(u), priv(NULL), isScreenView(false) {}
+      : view(v), renderMode(m), uid(u), priv(NULL), isScreenView(false) {}
 };
 
 /**
  * Preset local voice reverberation options.
+ * bitmap allocation:
+ * |  bit31  |    bit30 - bit24   |        bit23 - bit16        | bit15 - bit8 |  bit7 - bit0   |
+ * |---------|--------------------|-----------------------------|--------------|----------------|
+ * |reserved | 0x1: voice beauty  | 0x1: chat beautification    | effect types | effect settings|
+ * |         |                    | 0x2: singing beautification |              |                |
+ * |         |                    | 0x3: timbre transform       |              |                |
+ * |         |--------------------|-----------------------------|              |                |
+ * |         | 0x2: audio effect  | 0x1: space construction     |              |                |
+ * |         |                    | 0x2: voice changer effect   |              |                |
+ * |         |                    | 0x3: style transform        |              |                |
+ * |         |                    | 0x4: electronic sound       |              |                |
+ * |         |                    | 0x5: magic tone             |              |                |
+ * |         |--------------------|-----------------------------|              |                |
+ * |         | 0x3: voice changer | 0x1: voice transform        |              |                |
  */
 enum AUDIO_REVERB_PRESET {
   /**
@@ -3157,64 +3165,37 @@ enum AUDIO_REVERB_PRESET {
    */
   AUDIO_REVERB_OFF = 0, // Turn off audio reverb
   /**
-   * 0x00000001: Pop music.
+   * 0x02010100: KTV venue (enhanced).
    */
-  AUDIO_REVERB_POPULAR = 0x00000001,
+  AUDIO_REVERB_FX_KTV = 0x02010100,
   /**
-   * 0x00000002: R&B music.
+   * 0x02010200: Concert hall (enhanced).
    */
-  AUDIO_REVERB_RNB = 0x00000002,
+  AUDIO_REVERB_FX_VOCAL_CONCERT = 0x02010200,
   /**
-   * 0x00000003: Rock music.
+   * 0x02020100: Uncle's voice.
    */
-  AUDIO_REVERB_ROCK = 0x00000003,
+  AUDIO_REVERB_FX_UNCLE = 0x02020100,
   /**
-   * 0x00000004: Hip-hop music.
+   * 0x02020400: Little sister's voice.
    */
-  AUDIO_REVERB_HIPHOP = 0x00000004,
+  AUDIO_REVERB_FX_SISTER = 0x02020400,
   /**
-   * 0x00000005: Concert hall.
+   * 0x02010300: Recording studio (enhanced).
    */
-  AUDIO_REVERB_VOCAL_CONCERT = 0x00000005,
+  AUDIO_REVERB_FX_STUDIO = 0x02010300,
   /**
-   * 0x00000006: KTV venue.
+   * 0x02030200: Pop music (enhanced).
    */
-  AUDIO_REVERB_KTV = 0x00000006,
+  AUDIO_REVERB_FX_POPULAR = 0x02030200,
   /**
-   * 0x00000007: Recording studio.
+   * 0x02030100: R&B music (enhanced).
    */
-  AUDIO_REVERB_STUDIO = 0x00000007,
-  /** 0x00100001: KTV venue (enhanced).
-  */
-  AUDIO_REVERB_FX_KTV = 0x00100001,
+  AUDIO_REVERB_FX_RNB = 0x02030100,
   /**
-   * 0x00100002: Concert hall (enhanced).
+   * 0x02010400: Vintage phonograph.
    */
-  AUDIO_REVERB_FX_VOCAL_CONCERT = 0x00100002,
-  /**
-   * 0x00100003: Uncle's voice.
-   */
-  AUDIO_REVERB_FX_UNCLE = 0x00100003,
-  /**
-   * 0x00100004: Little sister's voice.
-   */
-  AUDIO_REVERB_FX_SISTER = 0x00100004,
-  /**
-   * 0x00100005: Recording studio (enhanced).
-   */
-  AUDIO_REVERB_FX_STUDIO = 0x00100005,
-  /**
-   * 0x00100006: Pop music (enhanced).
-   */
-  AUDIO_REVERB_FX_POPULAR = 0x00100006,
-  /**
-   * 0x00100007: R&B music (enhanced).
-   */
-  AUDIO_REVERB_FX_RNB = 0x00100007,
-  /**
-   * 0x00100008: Vintage phonograph.
-   */
-  AUDIO_REVERB_FX_PHONOGRAPH = 0x00100008
+  AUDIO_REVERB_FX_PHONOGRAPH = 0x02010400
 };
 
 /**
@@ -3253,81 +3234,81 @@ enum VOICE_CHANGER_PRESET {
    */
   VOICE_CHANGER_OFF = 0, //Turn off the voice changer
   /**
-   * 0x00000001: The voice of an old man.
+   * 0x02020200: The voice of an old man.
    */
-  VOICE_CHANGER_OLDMAN = 0x00000001,
+  VOICE_CHANGER_OLDMAN = 0x02020200,
   /**
-   * 0x00000002: The voice of a little boy.
+   * 0x02020300: The voice of a little boy.
    */
-  VOICE_CHANGER_BABYBOY = 0x00000002,
+  VOICE_CHANGER_BABYBOY = 0x02020300,
   /**
-   * 0x00000003: The voice of a little girl.
+   * 0x02020500: The voice of a little girl.
    */
-  VOICE_CHANGER_BABYGIRL = 0x00000003,
+  VOICE_CHANGER_BABYGIRL = 0x02020500,
   /**
-   * 0x00000004: The voice of Zhu Bajie, a character in *Journey to the West*
+   * 0x02020600: The voice of Zhu Bajie, a character in *Journey to the West*
    * who has a voice like that of a growling bear.
    */
-  VOICE_CHANGER_ZHUBAJIE = 0x00000004,
+  VOICE_CHANGER_ZHUBAJIE = 0x02020600,
   /**
-   * 0x00000005: The ethereal voice.
+   * 0x02010700: The ethereal voice.
    */
-  VOICE_CHANGER_ETHEREAL = 0x00000005,
+  VOICE_CHANGER_ETHEREAL = 0x02010700,
   /**
-   * 0x00000006: The voice of Hulk.
+   * 0x02020700: The voice of Hulk.
    */
-  VOICE_CHANGER_HULK = 0x00000006,
+  VOICE_CHANGER_HULK = 0x02020700,
   /**
-   * 0x00100001: A more vigorous voice.
+   * 0x01030100: A more vigorous voice.
    */
-  VOICE_BEAUTY_VIGOROUS = 0x00100001,
+  VOICE_BEAUTY_VIGOROUS = 0x01030100,
   /**
-   * 0x00100002: A deeper voice.
+   * 0x01030200: A deeper voice.
    */
-  VOICE_BEAUTY_DEEP = 0x00100002,
+  VOICE_BEAUTY_DEEP = 0x01030200,
   /**
-   * 0x00100003: A mellower voice.
+   * 0x01030300: A mellower voice.
    */
-  VOICE_BEAUTY_MELLOW = 0x00100003,
+  VOICE_BEAUTY_MELLOW = 0x01030300,
   /**
-   * 0x00100004: Falsetto.
+   * 0x01030400: Falsetto.
    */
-  VOICE_BEAUTY_FALSETTO = 0x00100004,
+  VOICE_BEAUTY_FALSETTO = 0x01030400,
   /**
-   * 0x00100005: A fuller voice.
+   * 0x01030500: A fuller voice.
    */
-  VOICE_BEAUTY_FULL = 0x00100005,
+  VOICE_BEAUTY_FULL = 0x01030500,
   /**
-   * 0x00100006: A clearer voice.
+   * 0x01030600: A clearer voice.
    */
-  VOICE_BEAUTY_CLEAR = 0x00100006,
+  VOICE_BEAUTY_CLEAR = 0x01030600,
   /**
-   * 0x00100007: A more resounding voice.
+   * 0x01030700: A more resounding voice.
    */
-  VOICE_BEAUTY_RESOUNDING = 0x00100007,
+  VOICE_BEAUTY_RESOUNDING = 0x01030700,
   /**
-   * 0x00100008: A more ringing voice.
+   * 0x01030800: A more ringing voice.
    */
-  VOICE_BEAUTY_RINGING = 0x00100008,
+  VOICE_BEAUTY_RINGING = 0x01030800,
   /**
-   * 0x00100009: A more spatially resonant voice.
+   * 0x02010600: A more spatially resonant voice.
    */
-  VOICE_BEAUTY_SPACIAL = 0x00100009,
+  VOICE_BEAUTY_SPACIAL = 0x02010600,
   /**
-   * 0x00200001: (For male only) A more magnetic voice. Do not use it when
+   * 0x01010100: (For male only) A more magnetic voice. Do not use it when
    * the speaker is a female; otherwise, voice distortion occurs.
    */
-  GENERAL_BEAUTY_VOICE_MALE = 0x00200001,
+  GENERAL_BEAUTY_VOICE_MALE = 0x01010100,
   /**
-   * 0x00200002: (For female only) A fresher voice. Do not use it when
+   * 0x01010200: (For female only) A fresher voice. Do not use it when
    * the speaker is a male; otherwise, voice distortion occurs.
    */
-  GENERAL_BEAUTY_VOICE_FEMALE_FRESH = 0x00200002,
+  GENERAL_BEAUTY_VOICE_FEMALE_FRESH = 0x01010200,
   /**
-   * 0x00200003: (For female only) A more vital voice. Do not use it when the
+   * 0x01010300: (For female only) A more vital voice. Do not use it when the
    * speaker is a male; otherwise, voice distortion occurs.
    */
-  GENERAL_BEAUTY_VOICE_FEMALE_VITALITY = 0x00200003
+  GENERAL_BEAUTY_VOICE_FEMALE_VITALITY = 0x01010300
 };
 
 enum AREA_CODE {
