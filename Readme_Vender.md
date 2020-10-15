@@ -66,7 +66,7 @@ public class ByteDanceExtensionProvider{
   public static native long nativeCreateProvider(Context context);
 }
 ```
-## 2. 提供setParameters的java方法，并实现其对应的jni方法，以将所需参数设置到native层
+## 2. 如有需要，提供setParameters的java方法，并实现其对应的jni方法，以将所需参数设置到native层
 ```
 public static native int setParameters(String parameters);
 ```
