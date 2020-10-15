@@ -32,7 +32,7 @@ namespace agora {
 
             JNIEnv *getEnv();
 
-            JNIEnv *attachCurrentTnread();
+            JNIEnv *attachCurrentThread();
 
             void detachCurrentThread();
 

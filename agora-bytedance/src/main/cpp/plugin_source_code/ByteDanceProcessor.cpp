@@ -22,17 +22,11 @@ if(ret != 0){\
     PRINTF_ERROR(__VA_ARGS__);\
 }
 
-extern "C" void initGL();
-extern "C" void releaseGL();
-extern "C" void makeCurrent();
-extern "C" void dataCallback(const char * data);
-
 namespace agora {
     namespace extension {
         using namespace rapidjson;
         bool ByteDanceProcessor::initOpenGL() {
             const std::lock_guard<std::mutex> lock(mutex_);
-            initGL();
 
 #if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
             if (!eglCore_) {
@@ -51,7 +45,6 @@ namespace agora {
         bool ByteDanceProcessor::releaseOpenGL() {
             const std::lock_guard<std::mutex> lock(mutex_);
 
-            releaseGL();
 #if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
             if (eglCore_) {
                 if (offscreenSurface_) {
@@ -102,7 +95,6 @@ namespace agora {
         }
 
         void ByteDanceProcessor::processEffect(const agora::media::base::VideoFrame &capturedFrame) {
-            makeCurrent();
             if (!byteEffectHandler_) {
                 bef_effect_result_t ret;
                 ret = bef_effect_ai_create(&byteEffectHandler_);
@@ -112,7 +104,7 @@ namespace agora {
 #if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
                 void *context = AndroidContextHelper::getContext();
                 ret = bef_effect_ai_check_license(
-                        JniHelper::getJniHelper()->attachCurrentTnread(),
+                        JniHelper::getJniHelper()->attachCurrentThread(),
                         reinterpret_cast<jobject>(context), byteEffectHandler_,
                         licensePath_.c_str());
 #elif defined __APPLE__
@@ -218,7 +210,7 @@ namespace agora {
 #if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
                 void *context = AndroidContextHelper::getContext();
                 ret = bef_effect_ai_face_check_license(
-                        JniHelper::getJniHelper()->attachCurrentTnread(),
+                        JniHelper::getJniHelper()->attachCurrentThread(),
                         reinterpret_cast<jobject>(context), faceDetectHandler_,
                         licensePath_.c_str());
 #elif defined __APPLE__
@@ -246,7 +238,7 @@ namespace agora {
 #if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
                 void *context = AndroidContextHelper::getContext();
                 ret = bef_effect_ai_face_attribute_check_license(
-                        JniHelper::getJniHelper()->attachCurrentTnread(),
+                        JniHelper::getJniHelper()->attachCurrentThread(),
                         reinterpret_cast<jobject>(context), faceAttributesHandler_,
                         licensePath_.c_str());
 #elif defined __APPLE__
@@ -320,7 +312,7 @@ namespace agora {
 #if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
                 void *context = AndroidContextHelper::getContext();
                 ret = bef_effect_ai_hand_check_license(
-                        JniHelper::getJniHelper()->attachCurrentTnread(),
+                        JniHelper::getJniHelper()->attachCurrentThread(),
                         reinterpret_cast<jobject>(context), handDetectHandler_,
                         licensePath_.c_str());
 #elif defined __APPLE__
@@ -414,7 +406,7 @@ namespace agora {
 #if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
                 void *context = AndroidContextHelper::getContext();
                 ret = bef_effect_ai_lightcls_check_license(
-                        JniHelper::getJniHelper()->attachCurrentTnread(),
+                        JniHelper::getJniHelper()->attachCurrentThread(),
                         reinterpret_cast<jobject>(context), lightDetectHandler_,
                         licensePath_.c_str());
 #elif defined __APPLE__
@@ -732,5 +724,10 @@ namespace agora {
             return id;
         }
 
+        void ByteDanceProcessor::dataCallback(const char* data){
+            if (facility_ != nullptr) {
+                facility_->fireEvent("ByteDanceProcessor", data);
+            }
+        }
     }
 }

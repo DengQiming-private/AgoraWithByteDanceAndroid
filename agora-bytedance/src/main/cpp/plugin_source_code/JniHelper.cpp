@@ -15,6 +15,7 @@ namespace agora {
         }
 
         JniHelper::~JniHelper() {
+            AndroidContextHelper::releaseContext(getEnv());
             javaVm = nullptr;
         }
 
@@ -42,7 +43,7 @@ namespace agora {
             return jniHelper;
         }
 
-        JNIEnv *JniHelper::attachCurrentTnread() {
+        JNIEnv *JniHelper::attachCurrentThread() {
             JNIEnv *env = nullptr;
             int status = javaVm->GetEnv((void **) &env, JNI_VERSION_1_6);
             if (status == JNI_EDETACHED) {

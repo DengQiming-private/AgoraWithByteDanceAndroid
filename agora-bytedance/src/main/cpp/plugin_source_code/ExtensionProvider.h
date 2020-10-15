@@ -5,10 +5,7 @@
 #ifndef AGORAWITHBYTEDANCE_EXTENSIONPROVIDER_H
 #define AGORAWITHBYTEDANCE_EXTENSIONPROVIDER_H
 
-#include "AgoraRtcKit/NGIAgoraMediaNodeFactory.h"
-#include "AgoraRtcKit/NGIAgoraExtensionControl.h"
-#include "AgoraRtcKit/AgoraRefPtr.h"
-#include "AgoraRtcKit/AgoraRefCountedObject.h"
+#include "AgoraRtcKit/NGIAgoraExtensionVideoFilter.h"
 #include "ExtensionVideoFilter.h"
 
 namespace agora {
@@ -16,24 +13,30 @@ namespace agora {
 
         class ByteDanceProcessor;
 
-        class ExtensionProvider : public agora::rtc::IExtensionProvider {
+        class ExtensionProvider : public agora::rtc::IExtensionVideoFilterProvider {
         private:
-            agora_refptr<agora::rtc::IVideoFilter> videoFilterPtr_;
             agora_refptr<ByteDanceProcessor> byteDanceProcessor_;
 
         public:
-            ExtensionProvider(agora_refptr<ByteDanceProcessor> byteDanceProcessor);
+            ExtensionProvider();
 
             ~ExtensionProvider();
 
-            virtual agora_refptr<agora::rtc::IVideoFilter> createVideoFilter(const char *name) override;
+            virtual unsigned int extensionFrameworkVersion(char* buffer, unsigned int buffer_size) const override;
 
-            virtual agora_refptr<agora::rtc::IAudioFilter> createAudioFilter(const char *name) override;
+            virtual unsigned int vendor(char* buffer, unsigned int buffer_size) const override;
 
-            virtual agora_refptr<agora::rtc::IVideoSinkBase> createVideoSink(const char *name) override;
+            virtual unsigned int name(char* buffer, unsigned int buffer_size) const override;
 
-        protected:
-            ExtensionProvider() = default;
+            virtual unsigned int version(char* buffer, unsigned int buffer_size) const override;
+
+            virtual agora::rtc::Video_Filter_Position position() const override;
+
+            virtual agora::rtc::IExtensionVideoFilter* create() override;
+
+            virtual void destroy(agora::rtc::IExtensionVideoFilter* filter) override;
+
+            int setParameters(std::string parameter);
         };
     }
 }

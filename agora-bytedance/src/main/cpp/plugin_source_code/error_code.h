@@ -11,7 +11,7 @@ namespace agora {
             ERROR_OK = 0,
             ERROR_NOT_INIT_RTC_ENGINE = 1,
             ERROR_NOT_INIT_VIDEO_FILTER = 2,
-            ERR_NOT_INIT_PLUGIN_MANAGER = 3,
+            ERR_NOT_INIT_EXTENSION_PROVIDER = 3,
             ERROR_ERR_PARAMETER = 10,
             ERROR_INVALID_JSON = 100,
             ERROR_INVALID_JSON_TYPE = 101,

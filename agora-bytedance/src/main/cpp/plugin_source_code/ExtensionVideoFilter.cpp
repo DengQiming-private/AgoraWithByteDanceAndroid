@@ -17,42 +17,30 @@ namespace agora {
             byteDanceProcessor_->releaseOpenGL();
         }
 
-        void ExtensionVideoFilter::setEnabled(bool enable) {
-            int a = 10;
-
-        }
-
-        bool ExtensionVideoFilter::isEnabled() {
-            return true;
-        }
-
-        bool ExtensionVideoFilter::adaptVideoFrame(const agora::media::base::VideoFrame &capturedFrame,
+        bool isInitOpenGL = false;
+        bool ExtensionVideoFilter::filter(const agora::media::base::VideoFrame &capturedFrame,
                                                    agora::media::base::VideoFrame &adaptedFrame) {
-//            PRINTF_INFO("adaptVideoFrame");
+//            PRINTF_INFO("filter VideoFrame");
+            if (!isInitOpenGL) {
+                isInitOpenGL = byteDanceProcessor_->initOpenGL();
+            }
             byteDanceProcessor_->processFrame(capturedFrame);
             adaptedFrame = capturedFrame;
             return true;
         }
 
-        size_t ExtensionVideoFilter::setProperty(const char *key, const void *buf,
-                                                 size_t buf_size) {
-            return 0;
-        }
-
-        size_t ExtensionVideoFilter::getProperty(const char *key, void *buf, size_t buf_size) {
-            return 0;
-        }
-
-        bool ExtensionVideoFilter::onDataStreamWillStart() {
-            PRINTF_INFO("ExtensionVideoFilter::onDataStreamWillStart");
-            byteDanceProcessor_->initOpenGL();
+        bool ExtensionVideoFilter::setProperty(const char* key, const char* json_value) {
             return true;
         }
 
-        void ExtensionVideoFilter::onDataStreamWillStop() {
-            PRINTF_INFO("ExtensionVideoFilter::onDataStreamWillStop");
-            byteDanceProcessor_->releaseOpenGL();
+        unsigned int ExtensionVideoFilter::property(const char* key,
+                              char* json_value_buffer, unsigned int json_value_buffer_size) const {
+            return 0;
         }
 
+        bool ExtensionVideoFilter::setExtensionFacility(agora::rtc::IExtensionFacility* facility) {
+            byteDanceProcessor_->setExtensionFacility(facility);
+            return true;
+        }
     }
 }

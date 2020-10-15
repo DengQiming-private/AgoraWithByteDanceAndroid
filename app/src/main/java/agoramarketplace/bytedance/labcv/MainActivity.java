@@ -1,4 +1,4 @@
-package com.bytedance.labcv;
+package agoramarketplace.bytedance.labcv;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
@@ -23,18 +23,16 @@ import org.json.JSONObject;
 
 import java.io.File;
 
-import io.agora.extension.AgoraByteDanceDataReceiver;
 import io.agora.extension.AgoraPluginManager;
 import io.agora.extension.ResourceHelper;
 import io.agora.extension.UtilsAsyncTask;
 import io.agora.rtc2.Constants;
 import io.agora.rtc2.IRtcEngineEventHandler;
 import io.agora.rtc2.RtcEngine;
-import io.agora.rtc2.internal.RtcEngineImpl;
 import io.agora.rtc2.video.VideoCanvas;
 
 
-public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.OnUtilsAsyncTaskEvents, AgoraByteDanceDataReceiver {
+public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.OnUtilsAsyncTaskEvents {
 
     private static final String[] REQUESTED_PERMISSIONS = {
             Manifest.permission.RECORD_AUDIO,
@@ -71,15 +69,12 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
         } else {
             Log.d("Agora_zt", "Resource is ready");
             infoTextView.setText("Resource is ready");
-            initEffectEngine();
         }
-        AgoraPluginManager.dataReceiver = this;
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        AgoraPluginManager.dataReceiver = null;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -156,6 +151,17 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
                         }
                     });
                 }
+
+                @Override
+                public void onExtensionEvent(String tag, String key, final String value) {
+                    Log.d(TAG, "onExtensionEvent tag: " + tag + "  key: " + key);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            onDataReceive(value);
+                        }
+                    });
+                }
             });
 
             setupLocalVideo();
@@ -166,8 +172,6 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             mRtcEngine.enableLocalVideo(true);
             mRtcEngine.enableVideo();
             mRtcEngine.enableAudio();
-            boolean s = RtcEngineImpl.loadExtension("native-lib");
-            mRtcEngine.enableLocalVideoFilter("agora", "bytedance", true);
             Log.d(TAG, "api call join channel");
             mRtcEngine.joinChannel("", "agora_test", "", 0);
             mRtcEngine.startPreview();
@@ -240,8 +244,8 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             o.put("plugin.bytedance.handGestureModelPath", ResourceHelper.getHandModelPath(this, ResourceHelper.GestureParamFile));
             o.put("plugin.bytedance.handKPModelPath", ResourceHelper.getHandModelPath(this, ResourceHelper.KeyPointParamFile));
 
-            o.put("plugin.bytedance.lightDetectEnabled", true);
-            o.put("plugin.bytedance.lightDetectModelPath", ResourceHelper.getLightClsModelPath(this));
+//            o.put("plugin.bytedance.lightDetectEnabled", true);
+//            o.put("plugin.bytedance.lightDetectModelPath", ResourceHelper.getLightClsModelPath(this));
 
             JSONObject node1 = new JSONObject();
             node1.put("path", ResourceHelper.getComposePath(this) + "lip/fuguhong");
@@ -254,7 +258,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             node2.put("intensity", 1.0);
 
             JSONObject node3 = new JSONObject();
-            node3.put("path", ResourceHelper.getComposePath(this) + "reshape_camera");
+            node3.put("path", ResourceHelper.getComposePath(this) + "reshape_live");
             node3.put("key", "Internal_Deform_Face");
             node3.put("intensity", 1.0);
 
@@ -272,11 +276,6 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
         }
     }
 
-    private void initEffectEngine() {
-        AgoraPluginManager.setContext(this);
-
-    }
-
     @Override
     public void onPreExecute() {
 
@@ -287,11 +286,9 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
         ResourceHelper.setResourceReady(this, true, 1);
         Toast.makeText(this, "copy resource Ready", Toast.LENGTH_LONG).show();
         infoTextView.setText("Resource is ready");
-        initEffectEngine();
     }
 
-    @Override
-    public void onDataReceive(String data) {
+    private void onDataReceive(String data) {
         try {
 
             JSONObject o = new JSONObject(data);

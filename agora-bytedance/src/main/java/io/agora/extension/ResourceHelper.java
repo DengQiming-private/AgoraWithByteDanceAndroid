@@ -28,13 +28,13 @@ public class ResourceHelper {
     private static final String PORTRAITMATTING = "ModelResource.bundle/mattingmodel/tt_matting_v9.0.model";
     private static final String HEADSEGMENT = "ModelResource.bundle/headseg/tt_headseg_v5.0.model";
     private static final String HAIRPARSING = "ModelResource.bundle/hairparser/tt_hair_v9.0.model";
-    private static final String LIGHTCLS = "ModelResource.bundle/lightcls/tt_lightcls_v1.0.model";
+//    private static final String LIGHTCLS = "ModelResource.bundle/lightcls/tt_lightcls_v1.0.model";
     private static final String HUMANDIST = "ModelResource.bundle/humandistance/tt_humandist_v1.0.model";
     public static final String GENERAL_OBJECT_DETECT = "ModelResource.bundle/generalobjectmodel/tt_general_obj_detection_v1.0.model";
     public static final String GENERAL_OBJECT_CLS = "ModelResource.bundle/generalobjectmodel/tt_general_obj_detection_cls_v1.0.model";
     public static final String GENERAL_OBJECT_TRACK = "ModelResource.bundle/generalobjectmodel/tt_sample_v1.0.model";
 
-    private static final String LICENSE_NAME = "labcv_test_20200630_20200831_com.bytedance.labcv.demo_labcv_test_v3.9.2.1.licbag";
+    private static final String LICENSE_NAME = "Agora_20200915_20210914_agoramarketplace.bytedance.labcv.demo_v3.9.3.1.licbag";
 
     private static String getResourcePath(Context context) {
         return context.getExternalFilesDir("assets").getAbsolutePath() + File.separator + RESOURCE;
@@ -132,10 +132,10 @@ public class ResourceHelper {
         return file.getAbsolutePath();
     }
 
-    public static String getLightClsModelPath(final Context context) {
-        File file = new File(getResourcePath(context), LIGHTCLS);
-        return file.getAbsolutePath();
-    }
+//    public static String getLightClsModelPath(final Context context) {
+//        File file = new File(getResourcePath(context), LIGHTCLS);
+//        return file.getAbsolutePath();
+//    }
 
     public static String getGeneralObjectDetect(final Context context) {
         return new File(getResourcePath(context), GENERAL_OBJECT_DETECT).getAbsolutePath();

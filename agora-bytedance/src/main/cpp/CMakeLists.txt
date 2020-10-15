@@ -8,9 +8,9 @@ cmake_minimum_required(VERSION 3.4.1)
 project(native-lib)
 
 #link agora so
-set(agora-lib-so ${PROJECT_SOURCE_DIR}/../jniLibs/${CMAKE_ANDROID_ARCH_ABI}/libagora-rtc-sdk-jni.so)
+#set(agora-lib-so ${PROJECT_SOURCE_DIR}/../jniLibs/${CMAKE_ANDROID_ARCH_ABI}/libagora-rtc-sdk-jni.so)
 
-link_libraries(${agora-lib-so})
+#link_libraries(${agora-lib-so})
 
 
 #link bytedance so
@@ -35,7 +35,6 @@ add_library( # Sets the name of the library.
         plugin_source_code/ExtensionVideoFilter.cpp
         plugin_source_code/EGLCore.cpp
         plugin_source_code/JniHelper.cpp
-        plugin_source_code/PluginManager.cpp
         plugin_source_code/ByteDanceProcessor.cpp
              # Provides a relative path to your source file(s).
         native-lib.cpp)
@@ -61,7 +60,7 @@ target_include_directories(native-lib PRIVATE ${PROJECT_SOURCE_DIR})
 
 target_link_libraries( # Specifies the target library.
                        native-lib
-                        ${agora-lib-so}
+#                        ${agora-lib-so}
                         ${bytedance-lib-so}
                        # Links the target library to the log library
                        # included in the NDK.

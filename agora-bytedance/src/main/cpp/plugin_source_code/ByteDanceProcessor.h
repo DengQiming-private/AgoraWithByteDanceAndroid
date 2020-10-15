@@ -9,8 +9,9 @@
 #include <string>
 #include <mutex>
 #include <vector>
+#include <AgoraRtcKit/NGIAgoraExtensionFacility.h>
+#include <AgoraRtcKit/AgoraRefPtr.h>
 
-#include "AgoraRtcKit/AgoraRefPtr.h"
 #include "AgoraRtcKit/AgoraMediaBase.h"
 #include "../bytedance/bef_effect_ai_api.h"
 #include "../bytedance/bef_effect_ai_lightcls.h"
@@ -31,12 +32,17 @@ namespace agora {
             int releaseEffectEngine();
 
             int setParameters(std::string parameter);
-            void onDataCallback(std::string data);
 
             std::thread::id getThreadId();
+
+            int setExtensionFacility(agora::rtc::IExtensionFacility* facility){
+                facility_ = facility;
+                return 0;
+            };
         protected:
             ~ByteDanceProcessor() {}
         private:
+            void dataCallback(const char* data);
             void processFaceDetect();
             void processHandDetect();
             void processLightDetect();
@@ -95,7 +101,7 @@ namespace agora {
 
             bool faceStickerEnabled_ = false;
             std::string faceStickerItemPath_;
-
+            agora::rtc::IExtensionFacility* facility_;
         };
     }
 }

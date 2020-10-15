@@ -1,4 +1,4 @@
-package com.bytedance.labcv;
+package agoramarketplace.bytedance.labcv;
 
 import org.junit.Test;
 
