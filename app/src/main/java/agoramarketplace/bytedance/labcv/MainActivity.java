@@ -29,6 +29,7 @@ import io.agora.extension.UtilsAsyncTask;
 import io.agora.rtc2.Constants;
 import io.agora.rtc2.IRtcEngineEventHandler;
 import io.agora.rtc2.RtcEngine;
+import io.agora.rtc2.RtcEngineConfig;
 import io.agora.rtc2.video.VideoCanvas;
 
 
@@ -110,8 +111,13 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
 
     private void initAgoraEngine() {
         try {
-
-            mRtcEngine = RtcEngine.create(this, appId, new IRtcEngineEventHandler() {
+            RtcEngineConfig config = new RtcEngineConfig();
+            config.mContext = this;
+            config.mAppId = appId;
+            long provider = AgoraPluginManager.nativeGetFilterProvider(this);
+            Log.d(TAG, "filter provider: " + provider);
+            config.addExtensionProvider("ByteDance", provider);
+            config.mEventHandler = new IRtcEngineEventHandler() {
                 @Override
                 public void onJoinChannelSuccess(String s, int i, int i1) {
                     Log.d(TAG, "onJoinChannelSuccess");
@@ -162,7 +168,8 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
                         }
                     });
                 }
-            });
+            };
+            mRtcEngine = RtcEngine.create(config);
 
             setupLocalVideo();
 
@@ -270,7 +277,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
 //            arr.put(node4);
             o.put("plugin.bytedance.ai.composer.nodes", arr);
 
-            AgoraPluginManager.setParameters(o.toString());
+            AgoraPluginManager.nativeSetParameters(o.toString());
         } catch (JSONException e) {
             e.printStackTrace();
         }

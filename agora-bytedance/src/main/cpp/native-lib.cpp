@@ -45,7 +45,7 @@ JNIEXPORT void JNI_OnUnload(JavaVM* vm, void* reserved) {
 }
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_io_agora_extension_provider_ByteDanceExtensionProvider_nativeCreateProvider(
+Java_io_agora_extension_AgoraPluginManager_nativeGetFilterProvider(
         JNIEnv* env,
         jclass clazz, jobject context) {
     if (extensionProvider == nullptr){
@@ -56,7 +56,8 @@ Java_io_agora_extension_provider_ByteDanceExtensionProvider_nativeCreateProvider
     return reinterpret_cast<intptr_t>(extensionProvider);
 }
 
-extern "C" JNIEXPORT int JNICALL Java_io_agora_extension_AgoraPluginManager_setParameters(
+extern "C" JNIEXPORT int JNICALL
+Java_io_agora_extension_AgoraPluginManager_nativeSetParameters(
                 JNIEnv* env,
                 jclass clazz, jstring parameters) {
     CHECK_EXTENSION_PROVIDER_INT;

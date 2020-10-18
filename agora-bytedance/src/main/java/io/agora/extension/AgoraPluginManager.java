@@ -9,7 +9,10 @@ import java.io.IOException;
 
 @Keep
 public class AgoraPluginManager {
-    public static native int setParameters(String parameters);
+    static {
+        System.loadLibrary("native-lib");
+    }
+
     public static void copyResource(Context context) {
         String path = "resource";
         File dstFile = context.getExternalFilesDir("assets");
@@ -21,4 +24,7 @@ public class AgoraPluginManager {
             e.printStackTrace();
         }
     }
+
+    public static native long nativeGetFilterProvider(Context context);
+    public static native int nativeSetParameters(String parameters);
 }
