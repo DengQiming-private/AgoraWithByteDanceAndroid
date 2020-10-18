@@ -1,5 +1,5 @@
 # native部分
-## 1. 实现agora::rtc::IExtensionVideoFilterProvider接口
+### 1. 实现agora::rtc::IExtensionVideoFilterProvider接口
 ```
 class IExtensionVideoFilterProvider {
 public:
@@ -14,8 +14,8 @@ public:
 };
 ```
 其中:
-### 1.1 extensionFrameworkVersion 是指 Agora sdk 中 extension framework 的版本号，现在为“1.0.0”
-### 1.2 Video_Filter_Position 是指插件在 video pipeline 中的位置，定义如下：
+1.1 extensionFrameworkVersion 是指 Agora sdk 中 extension framework 的版本号，现在为“1.0.0”
+1.2 Video_Filter_Position 是指插件在 video pipeline 中的位置，定义如下：
 ```
 enum class Video_Filter_Position {
   Video_Filter_Invalid_Position = 0,
@@ -23,7 +23,7 @@ enum class Video_Filter_Position {
   Video_Filter_Post_Decode
 };
 ```
-## 2. 实现agora::rtc::IExtensionVideoFilter接口
+### 2. 实现agora::rtc::IExtensionVideoFilter接口
 
 ```
 class IExtensionVideoFilter {
@@ -39,8 +39,8 @@ public:
 };
 ```
 其中:
-### 2.1 filter函数通过处理 original_frame，返回 processed_frame，提供了插件的核心功能
-### 2.2 IExtensionFacility 提供了触发回调事件 & log能力
+2.1 filter函数通过处理 original_frame，返回 processed_frame，提供了插件的核心功能
+2.2 IExtensionFacility 提供了触发回调事件 & log能力
 ```
 class IExtensionFacility {
 public:
@@ -51,22 +51,16 @@ public:
 ```
 
 # Java部分
-## 1. 提供类名为“io.agora.extension.provider.xxx”的java provider，并在该类中加载 native库（.so文件），且提供 getFilterProvider 静态方法以获取 native provider
+### 3. 指定一个类加载 native 库（.so文件），并在该类中提供 nativeGetFilterProvider 方法以获取 native provider
 ```
-package io.agora.extension.provider;
-import android.content.Context;
-public class ByteDanceExtensionProvider{
+public class AgoraPluginManager {
   static {
 	System.loadLibrary("native-lib");
   }
-  public static long getFilterProvider(Context context) {
-	return nativeCreateProvider(context);
-  }
-
-  public static native long nativeCreateProvider(Context context);
+  public static native long nativeGetFilterProvider(Context context);
 }
 ```
-## 2. 如有需要，提供setParameters的java方法，并实现其对应的jni方法，以将所需参数设置到native层
+### 4. 如有需要，提供 nativeSetParameters 方法，以将所需参数设置到native层
 ```
-public static native int setParameters(String parameters);
+public static native int nativeSetParameters(String parameters);
 ```

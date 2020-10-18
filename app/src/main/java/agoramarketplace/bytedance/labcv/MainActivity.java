@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
 
     private static final String appId = "5db0d12c40354100abd7a8a0adaa1fb8";
     private final static String TAG = "Agora_zt java :";
+    private static final String EXTENSION_TAG = "ByteDance";
     private static final int PERMISSION_REQ_ID = 22;
     private FrameLayout localVideoContainer;
     private FrameLayout remoteVideoContainer;
@@ -116,7 +117,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             config.mAppId = appId;
             long provider = AgoraPluginManager.nativeGetFilterProvider(this);
             Log.d(TAG, "filter provider: " + provider);
-            config.addExtensionProvider("ByteDance", provider);
+            config.addExtensionProvider(EXTENSION_TAG, provider);
             config.mEventHandler = new IRtcEngineEventHandler() {
                 @Override
                 public void onJoinChannelSuccess(String s, int i, int i1) {

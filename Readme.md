@@ -1,34 +1,34 @@
-# 初始化字节 plugin
+# 字节 plugin 的使用方法
 
-在 RtcEngine 初始化完成之后调用一下代码初始化字节的 plugin
-
-```
-// iOS
-[[AgoraPluginManager sharedManager] loadPlugin];
-[self.agoraKit enableLocalVideoFilter:@"agora" vendor:@"bytedance" enable:YES];
-
-// Android
-RtcEngineImpl.loadExtension("native-lib");
-AgoraPluginManager.setContext(this);
-```
-
-# 移除字节 plugin
+### 1. 使用 RtcEngine create(RtcEngineConfig config) 初始化方法
 
 ```
-// iOS
-[[AgoraPluginManager sharedManager] unloadPlugin];
+private static final String EXTENSION_TAG = "ByteDance";
+RtcEngineConfig config = new RtcEngineConfig();
+config.mContext = this;
+config.mAppId = appId;
+long provider = AgoraPluginManager.nativeGetFilterProvider(this); //通过插件提供的接口获取native provider句柄
+config.addExtensionProvider(EXTENSION_TAG, provider); //注册native provider句柄，其中的EXTENSION_TAG用于区分不同的插件
+config.mEventHandler = new IRtcEngineEventHandler() {
+  ......
+  @Override
+  public void onExtensionEvent(String tag, String key, final String value) { //此回调函数的第一个参数即为extension tag
+	......
+  }
+}
+mRtcEngine = RtcEngine.create(config);
 ```
+其中，
+1.1 addExtensionProvider可多次调用，以注册多个插件（需使用不同的EXTENSION_TAG）
+1.2 注册插件的event回调需要实现 IRtcEngineEventHandler 的 onExtensionEvent 接口
 
-# 设置参数
+### 2. 设置参数
 
 设置模型加载，美颜，贴纸参数，参数用 json 的方式传输
 
 ```
-// iOS
-[[AgoraPluginManager sharedManager] setParameter:jsonString];
-
 // Android
-AgoraPluginManager.setParameters(jsonString)
+AgoraPluginManager.nativeSetParameters(jsonString)
 ```
 
 参数解释如下
@@ -70,43 +70,8 @@ AgoraPluginManager.setParameters(jsonString)
 }
 ```
 
-
-
-# 注册人脸识别，光线识别，表情识别，手部识别的回调
-
-## iOS
-
-```
-[[AgoraPluginManager sharedManager] setDataReceiver:self];
-```
-
-其中 self 需要实现以下 protocol
-
-```
-@protocol AgoraByteDanceDataReceiver <NSObject>
-
-- (void) onDataReceive: (NSString *) data;
-
-@end
-```
-
-## Android
-
-```
-AgoraPluginManager.dataReceiver = this;
-```
-
-其中 this 需要继承以下接口
-
-```
-public interface AgoraByteDanceDataReceiver {
-    public void onDataReceive(String data);
-}
-```
-
-不同的识别结果会以 json 的方式返回
-
-## 脸部识别的结果
+### 3. 不同的识别结果将以 json 的方式返回
+3.1 脸部识别的结果
 
 ```
 "plugin.bytedance.face.info": [
@@ -129,7 +94,7 @@ public interface AgoraByteDanceDataReceiver {
     ]
 ```
 
-## 手部识别的结果
+3.2 手部识别的结果
 
 ```
 "plugin.bytedance.hand.info": [
@@ -144,7 +109,7 @@ public interface AgoraByteDanceDataReceiver {
     ]
 ```
 
-## 灯光识别结果
+3.3 灯光识别结果
 
 ```
 "plugin.bytedance.light.info": {
