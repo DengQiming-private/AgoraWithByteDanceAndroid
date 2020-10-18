@@ -19,8 +19,8 @@ config.mEventHandler = new IRtcEngineEventHandler() {
 mRtcEngine = RtcEngine.create(config);
 ```
 其中，
-1.1 addExtensionProvider可多次调用，以注册多个插件（需使用不同的EXTENSION_TAG）
-1.2 注册插件的event回调需要实现 IRtcEngineEventHandler 的 onExtensionEvent 接口
+###### 1.1 addExtensionProvider可多次调用，以注册多个插件（需使用不同的EXTENSION_TAG）
+###### 1.2 注册插件的event回调需要实现 IRtcEngineEventHandler 的 onExtensionEvent 接口
 
 ### 2. 设置参数
 
