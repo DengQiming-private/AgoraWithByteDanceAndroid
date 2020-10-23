@@ -5,28 +5,29 @@
 #ifndef AGORAWITHBYTEDANCE_EXTENSIONVIDEOFILTER_H
 #define AGORAWITHBYTEDANCE_EXTENSIONVIDEOFILTER_H
 
-#include "AgoraRtcKit/NGIAgoraExtensionVideoFilter.h"
+#include "AgoraRtcKit/NGIAgoraMediaNode.h"
 #include <AgoraRtcKit/AgoraRefCountedObject.h>
 #include "AgoraRtcKit/AgoraRefPtr.h"
 #include "ByteDanceProcessor.h"
 
 namespace agora {
     namespace extension {
-        class ExtensionVideoFilter : public agora::rtc::IExtensionVideoFilter {
+        class ExtensionVideoFilter : public agora::rtc::IVideoFilter {
         public:
             ExtensionVideoFilter(agora_refptr<ByteDanceProcessor> byteDanceProcessor);
 
             ~ExtensionVideoFilter();
 
-            bool filter(const agora::media::base::VideoFrame &capturedFrame,
-                             agora::media::base::VideoFrame &adaptedFrame) override;
+            bool adaptVideoFrame(const agora::media::base::VideoFrame &capturedFrame,
+                                 agora::media::base::VideoFrame &adaptedFrame) override;
 
-            bool setExtensionFacility(agora::rtc::IExtensionFacility* facility) override;
+            void setEnabled(bool enable) override;
 
-            bool setProperty(const char* key, const char* json_value) override;
+            bool isEnabled() override;
 
-            unsigned int property(const char* key,
-                                  char* json_value_buffer, unsigned int json_value_buffer_size) const override;
+            size_t setProperty(const char *key, const void *buf, size_t buf_size) override;
+
+            size_t getProperty(const char *key, void *buf, size_t buf_size) override;
 
         private:
             agora_refptr<ByteDanceProcessor> byteDanceProcessor_;

@@ -9,8 +9,8 @@
 #include <string>
 #include <mutex>
 #include <vector>
-#include <AgoraRtcKit/NGIAgoraExtensionFacility.h>
 #include <AgoraRtcKit/AgoraRefPtr.h>
+#include <AgoraRtcKit/NGIAgoraExtensionControl.h>
 
 #include "AgoraRtcKit/AgoraMediaBase.h"
 #include "../bytedance/bef_effect_ai_api.h"
@@ -35,8 +35,12 @@ namespace agora {
 
             std::thread::id getThreadId();
 
-            int setExtensionFacility(agora::rtc::IExtensionFacility* facility){
-                facility_ = facility;
+            int setExtensionControl(const char* id, agora::rtc::IExtensionControl* control){
+                control_ = control;
+                int len = std::string(id).length() + 1;
+                id_ = static_cast<char *>(malloc(len));
+                memset(id_, 0, len);
+                strcpy(id_, id);
                 return 0;
             };
         protected:
@@ -101,7 +105,8 @@ namespace agora {
 
             bool faceStickerEnabled_ = false;
             std::string faceStickerItemPath_;
-            agora::rtc::IExtensionFacility* facility_;
+            agora::rtc::IExtensionControl* control_;
+            char* id_;
         };
     }
 }

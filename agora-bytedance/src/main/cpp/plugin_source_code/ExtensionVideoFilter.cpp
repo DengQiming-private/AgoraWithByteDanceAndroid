@@ -18,8 +18,8 @@ namespace agora {
         }
 
         bool isInitOpenGL = false;
-        bool ExtensionVideoFilter::filter(const agora::media::base::VideoFrame &capturedFrame,
-                                                   agora::media::base::VideoFrame &adaptedFrame) {
+        bool ExtensionVideoFilter::adaptVideoFrame(const agora::media::base::VideoFrame &capturedFrame,
+                             agora::media::base::VideoFrame &adaptedFrame) {
 //            PRINTF_INFO("filter VideoFrame");
             if (!isInitOpenGL) {
                 isInitOpenGL = byteDanceProcessor_->initOpenGL();
@@ -29,17 +29,20 @@ namespace agora {
             return true;
         }
 
-        bool ExtensionVideoFilter::setProperty(const char* key, const char* json_value) {
-            return true;
-        }
-
-        unsigned int ExtensionVideoFilter::property(const char* key,
-                              char* json_value_buffer, unsigned int json_value_buffer_size) const {
+        size_t ExtensionVideoFilter::setProperty(const char *key, const void *buf,
+                                                 size_t buf_size) {
             return 0;
         }
 
-        bool ExtensionVideoFilter::setExtensionFacility(agora::rtc::IExtensionFacility* facility) {
-            byteDanceProcessor_->setExtensionFacility(facility);
+        size_t ExtensionVideoFilter::getProperty(const char *key, void *buf, size_t buf_size) {
+            return 0;
+        }
+
+        void ExtensionVideoFilter::setEnabled(bool enable) {
+            int a = 10;
+        }
+
+        bool ExtensionVideoFilter::isEnabled() {
             return true;
         }
     }

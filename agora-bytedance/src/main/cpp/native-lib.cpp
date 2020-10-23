@@ -29,7 +29,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     JNIEnv *env;
     int status = vm->GetEnv((void**)&env, JNI_VERSION_1_6);
 
-    jclass clz = env->FindClass("io/agora/extension/AgoraPluginManager");
+    jclass clz = env->FindClass("io/agora/extension/ExtensionManager");
     jniHelper->agoraByteDanceNativeClz = reinterpret_cast<jclass>(env->NewGlobalRef(clz));
     return JNI_VERSION_1_6;
 }
@@ -45,7 +45,7 @@ JNIEXPORT void JNI_OnUnload(JavaVM* vm, void* reserved) {
 }
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_io_agora_extension_AgoraPluginManager_nativeGetFilterProvider(
+Java_io_agora_extension_ExtensionManager_nativeGetExtensionProvider(
         JNIEnv* env,
         jclass clazz, jobject context) {
     if (extensionProvider == nullptr){
@@ -57,7 +57,7 @@ Java_io_agora_extension_AgoraPluginManager_nativeGetFilterProvider(
 }
 
 extern "C" JNIEXPORT int JNICALL
-Java_io_agora_extension_AgoraPluginManager_nativeSetParameters(
+Java_io_agora_extension_ExtensionManager_nativeSetParameters(
                 JNIEnv* env,
                 jclass clazz, jstring parameters) {
     CHECK_EXTENSION_PROVIDER_INT;

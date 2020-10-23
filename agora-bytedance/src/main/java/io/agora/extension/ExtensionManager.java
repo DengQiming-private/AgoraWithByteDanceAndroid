@@ -8,7 +8,8 @@ import java.io.File;
 import java.io.IOException;
 
 @Keep
-public class AgoraPluginManager {
+public class ExtensionManager {
+    public static final String VENDOR_NAME = "ByteDance";
     static {
         System.loadLibrary("native-lib");
     }
@@ -25,6 +26,6 @@ public class AgoraPluginManager {
         }
     }
 
-    public static native long nativeGetFilterProvider(Context context);
+    public static native long nativeGetExtensionProvider(Context context);
     public static native int nativeSetParameters(String parameters);
 }

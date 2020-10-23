@@ -23,7 +23,7 @@ import org.json.JSONObject;
 
 import java.io.File;
 
-import io.agora.extension.AgoraPluginManager;
+import io.agora.extension.ExtensionManager;
 import io.agora.extension.ResourceHelper;
 import io.agora.extension.UtilsAsyncTask;
 import io.agora.rtc2.Constants;
@@ -43,7 +43,6 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
 
     private static final String appId = "5db0d12c40354100abd7a8a0adaa1fb8";
     private final static String TAG = "Agora_zt java :";
-    private static final String EXTENSION_TAG = "ByteDance";
     private static final int PERMISSION_REQ_ID = 22;
     private FrameLayout localVideoContainer;
     private FrameLayout remoteVideoContainer;
@@ -115,9 +114,9 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             RtcEngineConfig config = new RtcEngineConfig();
             config.mContext = this;
             config.mAppId = appId;
-            long provider = AgoraPluginManager.nativeGetFilterProvider(this);
-            Log.d(TAG, "filter provider: " + provider);
-            config.addExtensionProvider(EXTENSION_TAG, provider);
+            long provider = ExtensionManager.nativeGetExtensionProvider(this);
+            Log.d(TAG, "Extension provider: " + provider);
+            config.addExtension(ExtensionManager.VENDOR_NAME, provider);
             config.mEventHandler = new IRtcEngineEventHandler() {
                 @Override
                 public void onJoinChannelSuccess(String s, int i, int i1) {
@@ -160,8 +159,8 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
                 }
 
                 @Override
-                public void onExtensionEvent(String tag, String key, final String value) {
-                    Log.d(TAG, "onExtensionEvent tag: " + tag + "  key: " + key);
+                public void onExtensionEvent(String vendor, String key, final String value) {
+                    Log.d(TAG, "onExtensionEvent tag: " + vendor + "  key: " + key);
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -171,7 +170,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
                 }
             };
             mRtcEngine = RtcEngine.create(config);
-
+            mRtcEngine.enableExtension(ExtensionManager.VENDOR_NAME, true);
             setupLocalVideo();
 
             mRtcEngine.setChannelProfile(Constants.CHANNEL_PROFILE_LIVE_BROADCASTING);
@@ -278,7 +277,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
 //            arr.put(node4);
             o.put("plugin.bytedance.ai.composer.nodes", arr);
 
-            AgoraPluginManager.nativeSetParameters(o.toString());
+            ExtensionManager.nativeSetParameters(o.toString());
         } catch (JSONException e) {
             e.printStackTrace();
         }

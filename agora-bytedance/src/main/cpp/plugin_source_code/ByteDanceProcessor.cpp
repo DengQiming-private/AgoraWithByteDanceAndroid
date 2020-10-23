@@ -725,8 +725,8 @@ namespace agora {
         }
 
         void ByteDanceProcessor::dataCallback(const char* data){
-            if (facility_ != nullptr) {
-                facility_->fireEvent("ByteDanceProcessor", data);
+            if (control_ != nullptr) {
+                control_->fireEvent(id_, "beauty", data);
             }
         }
     }

@@ -7,15 +7,16 @@
 // of Agora.io.
 
 #pragma once  // NOLINT(build/header_guard)
-
 #include "AgoraBase.h"
 #include "AgoraRefPtr.h"
 #include "IAgoraLog.h"
 #include "NGIAgoraVideoFrame.h"
-#include "NGIAgoraMediaNodeFactory.h"
+#include "NGIAgoraMediaNode.h"
 
 namespace agora {
 namespace rtc {
+
+class IExtensionControl;
 
 /**
  * Interfaces for Extension Provider
@@ -36,9 +37,31 @@ namespace rtc {
  */
 class IExtensionProvider : public RefCountInterface {
  public:
-  virtual agora_refptr<IAudioFilter> createAudioFilter(const char* name) = 0;
-  virtual agora_refptr<IVideoFilter> createVideoFilter(const char* name) = 0;
-  virtual agora_refptr<IVideoSinkBase> createVideoSink(const char* name) = 0;
+  enum PROVIDER_TYPE {
+    LOCAL_AUDIO_FILTER,
+    REMOTE_AUDIO_FILTER,
+    LOCAL_VIDEO_FILTER,
+    REMOTE_VIDEO_FILTER,
+    LOCAL_VIDEO_SINK,
+    REMOTE_VIDEO_SINK,
+    UNKNOWN,
+  };
+
+  virtual PROVIDER_TYPE getProviderType() {
+    return UNKNOWN;
+  }
+
+  virtual agora_refptr<IAudioFilter> createAudioFilter(const char* id, IExtensionControl* ctrl) {
+    return NULL;
+  }
+
+  virtual agora_refptr<IVideoFilter> createVideoFilter(const char* id, IExtensionControl* ctrl) {
+    return NULL;
+  }
+
+  virtual agora_refptr<IVideoSinkBase> createVideoSink(const char* id, IExtensionControl* ctrl) {
+    return NULL;
+  }
 
  protected:
   ~IExtensionProvider() {}
@@ -62,26 +85,6 @@ class IExtensionControl {
    * @param capabilities current supported agora extension features
    */
   virtual void getCapabilities(Capabilities& capabilities) = 0;
-
-  /**
-   * This method registers an extension provider to SDK.
-   * @param vendor_name name of the vendor that identifies the provider
-   * @param provider extension provider implemented by vendor
-   * @return
-   * - 0:  if succeeds
-   * - <0: failure
-   */
-  virtual int registerExtensionProvider(
-    const char* vendor_name, agora::agora_refptr<agora::rtc::IExtensionProvider> provider) = 0;
-  
-  /**
-   * This method unregisters the extension provider from SDK.
-   * @param vendor_name name of the vendor that identifies the provider
-   * @return
-   * - 0: if succeeds
-   * - <0: failure
-   */
-  virtual int unregisterExtensionProvider(const char* vendor_name) = 0;
 
   /**
    * This method creates an IVideoFrame object with specified type, format, width and height
@@ -125,6 +128,8 @@ class IExtensionControl {
    * - <0, if error happens
    */
   virtual int log(commons::LOG_LEVEL level, const char* message) = 0;
+
+  virtual int fireEvent(const char* id, const char* event_key, const char* event_json_str) = 0;
 
  protected:
   virtual ~IExtensionControl() {}
