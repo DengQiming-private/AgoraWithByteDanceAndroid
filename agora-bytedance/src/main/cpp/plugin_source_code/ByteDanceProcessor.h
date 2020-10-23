@@ -35,8 +35,12 @@ namespace agora {
 
             std::thread::id getThreadId();
 
-            int setExtensionControl(const char* id, agora::rtc::IExtensionControl* control){
+            int setExtensionControl(agora::rtc::IExtensionControl* control){
                 control_ = control;
+                return 0;
+            };
+
+            int setExtensionVendor(const char* id){
                 int len = std::string(id).length() + 1;
                 id_ = static_cast<char *>(malloc(len));
                 memset(id_, 0, len);

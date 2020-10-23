@@ -33,7 +33,7 @@ import io.agora.rtc2.RtcEngineConfig;
 import io.agora.rtc2.video.VideoCanvas;
 
 
-public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.OnUtilsAsyncTaskEvents {
+public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.OnUtilsAsyncTaskEvents, io.agora.rtc2.IMediaExtensionObserver {
 
     private static final String[] REQUESTED_PERMISSIONS = {
             Manifest.permission.RECORD_AUDIO,
@@ -116,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             config.mAppId = appId;
             long provider = ExtensionManager.nativeGetExtensionProvider(this);
             Log.d(TAG, "Extension provider: " + provider);
-            config.addExtension(ExtensionManager.VENDOR_NAME, provider);
+            config.addExtension(ExtensionManager.VENDOR_NAME, provider, this);
             config.mEventHandler = new IRtcEngineEventHandler() {
                 @Override
                 public void onJoinChannelSuccess(String s, int i, int i1) {
@@ -154,17 +154,6 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
                         @Override
                         public void run() {
                             onRemoteUserLeft();
-                        }
-                    });
-                }
-
-                @Override
-                public void onExtensionEvent(String vendor, String key, final String value) {
-                    Log.d(TAG, "onExtensionEvent tag: " + vendor + "  key: " + key);
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            onDataReceive(value);
                         }
                     });
                 }
@@ -295,10 +284,11 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
         infoTextView.setText("Resource is ready");
     }
 
-    private void onDataReceive(String data) {
+    @Override
+    public void onEvent(String vendor, String key, String value) {
         try {
 
-            JSONObject o = new JSONObject(data);
+            JSONObject o = new JSONObject(value);
             if (o.has("plugin.bytedance.light.info")) {
                 StringBuilder sb = new StringBuilder();
                 JSONObject lightInfo = o.getJSONObject("plugin.bytedance.light.info");

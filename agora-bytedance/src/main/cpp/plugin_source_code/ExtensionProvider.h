@@ -24,11 +24,13 @@ namespace agora {
 
             PROVIDER_TYPE getProviderType() override;
 
-            virtual agora_refptr<rtc::IAudioFilter> createAudioFilter(const char* id, rtc::IExtensionControl* ctrl) override;
+            virtual void setExtensionControl(rtc::IExtensionControl* control) override;
 
-            virtual agora_refptr<rtc::IVideoFilter> createVideoFilter(const char* id, rtc::IExtensionControl* ctrl) override;
+            virtual agora_refptr<rtc::IAudioFilter> createAudioFilter(const char* id) override;
 
-            virtual agora_refptr<rtc::IVideoSinkBase> createVideoSink(const char* id, rtc::IExtensionControl* ctrl) override;
+            virtual agora_refptr<rtc::IVideoFilter> createVideoFilter(const char* id) override;
+
+            virtual agora_refptr<rtc::IVideoSinkBase> createVideoSink(const char* id) override;
 
             int setParameters(std::string parameter);
         };

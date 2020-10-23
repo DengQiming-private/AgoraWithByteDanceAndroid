@@ -22,18 +22,18 @@ namespace agora {
             return 0;
         }
 
-        agora_refptr<agora::rtc::IVideoFilter> ExtensionProvider::createVideoFilter(const char* id, rtc::IExtensionControl* ctrl) {
+        agora_refptr<agora::rtc::IVideoFilter> ExtensionProvider::createVideoFilter(const char* id) {
 //            PRINTF_INFO("ExtensionProvider::createVideoFilter");
-            byteDanceProcessor_->setExtensionControl(id, ctrl);
+            byteDanceProcessor_->setExtensionVendor(id);
             auto videoFilter = new agora::RefCountedObject<agora::extension::ExtensionVideoFilter>(byteDanceProcessor_);
             return videoFilter;
         }
 
-        agora_refptr<agora::rtc::IAudioFilter> ExtensionProvider::createAudioFilter(const char* id, rtc::IExtensionControl* ctrl) {
+        agora_refptr<agora::rtc::IAudioFilter> ExtensionProvider::createAudioFilter(const char* id) {
             return nullptr;
         }
 
-        agora_refptr<agora::rtc::IVideoSinkBase> ExtensionProvider::createVideoSink(const char* id, rtc::IExtensionControl* ctrl) {
+        agora_refptr<agora::rtc::IVideoSinkBase> ExtensionProvider::createVideoSink(const char* id) {
             return nullptr;
         }
 
@@ -41,5 +41,8 @@ namespace agora {
             return ExtensionProvider::PROVIDER_TYPE::LOCAL_VIDEO_FILTER;
         }
 
+        void ExtensionProvider::setExtensionControl(rtc::IExtensionControl* control){
+            byteDanceProcessor_->setExtensionControl(control);
+        }
     }
 }
