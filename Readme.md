@@ -2,12 +2,12 @@
 ### 1. 将所需相关依赖文件放到指定目录
 |依赖文件|存放路径|
 |----|----|
-|agora-rtc-sdk.jar|AgoraWithByteDanceAndroid\app\libs\|
-|64位libagora-rtc-sdk-jni.so|AgoraWithByteDanceAndroid\app\src\main\jniLibs\arm64-v8a\|
-|32位libagora-rtc-sdk-jni.so|AgoraWithByteDanceAndroid\app\src\main\jniLibs\armeabi-v7a\|
-|64位字节美颜libeffect.so|AgoraWithByteDanceAndroid\agora-bytedance\src\main\jniLibs\arm64-v8a\|
-|32位字节美颜libeffect.so|AgoraWithByteDanceAndroid\agora-bytedance\src\main\jniLibs\armeabi-v7a\|
-|字节美颜资源包|AgoraWithByteDanceAndroid\agora-bytedance\src\main\assets\|
+|agora-rtc-sdk.jar|AgoraWithByteDanceAndroid\app\libs|
+|64位libagora-rtc-sdk-jni.so|AgoraWithByteDanceAndroid\app\src\main\jniLibs\arm64-v8a|
+|32位libagora-rtc-sdk-jni.so|AgoraWithByteDanceAndroid\app\src\main\jniLibs\armeabi-v7a|
+|64位字节美颜libeffect.so|AgoraWithByteDanceAndroid\agora-bytedance\src\main\jniLibs\arm64-v8a|
+|32位字节美颜libeffect.so|AgoraWithByteDanceAndroid\agora-bytedance\src\main\jniLibs\armeabi-v7a|
+|字节美颜资源包|AgoraWithByteDanceAndroid\agora-bytedance\src\main\assets|
 
 ### 2. 使用 RtcEngine create(RtcEngineConfig config) 初始化方法
 ```
