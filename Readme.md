@@ -10,7 +10,6 @@
 |字节美颜资源包|AgoraWithByteDanceAndroid\agora-bytedance\src\main\assets\|
 
 ### 2. 使用 RtcEngine create(RtcEngineConfig config) 初始化方法
-
 ```
 RtcEngineConfig config = new RtcEngineConfig();
 config.mContext = this;
@@ -24,8 +23,9 @@ mRtcEngine = RtcEngine.create(config);
 //enable插件
 mRtcEngine.enableExtension(ExtensionManager.VENDOR_NAME, true);
 ```
-其中，
-2.1 addExtensionProvider可多次调用，以注册多个插件（需使用不同的EXTENSION_TAG）
+
+2.1 addExtensionProvider可多次调用，以注册多个插件（需使用不同的VENDOR_NAME）
+
 2.2 注册插件的消息回调需要实现 io.agora.rtc2.IMediaExtensionObserver 的 onEvent 接口
 ```
 @Override

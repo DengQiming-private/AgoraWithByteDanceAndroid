@@ -10,7 +10,7 @@ public:
   virtual agora_refptr<IVideoSinkBase> createVideoSink(const char* id);
 };
 ```
-其中:
+
 1.1 PROVIDER_TYPE 是指插件在 video pipeline 中的位置，定义如下：
 ```
 enum PROVIDER_TYPE {
@@ -23,7 +23,8 @@ enum PROVIDER_TYPE {
   UNKNOWN,
 };
 ```
-2.1 IExtensionControl 用于触发回调事件 & log能力
+
+1.2 IExtensionControl 用于触发回调事件 & log能力
 ```
 void ByteDanceProcessor::dataCallback(const char* data){
   if (control_ != nullptr) {
