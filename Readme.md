@@ -11,6 +11,9 @@
 
 ### 2. 使用 RtcEngine create(RtcEngineConfig config) 初始化方法
 ```
+//更换为开发者自己的appID
+private static final String appId = "#YOUR APP ID#";
+......
 RtcEngineConfig config = new RtcEngineConfig();
 config.mContext = this;
 config.mAppId = appId;
