@@ -5,7 +5,7 @@
 #ifndef AGORAWITHBYTEDANCE_EXTENSIONPROVIDER_H
 #define AGORAWITHBYTEDANCE_EXTENSIONPROVIDER_H
 
-#include "AgoraRtcKit/NGIAgoraExtensionControl.h"
+#include "AgoraRtcKit/NGIAgoraExtensionProvider.h"
 #include "ExtensionVideoFilter.h"
 
 namespace agora {

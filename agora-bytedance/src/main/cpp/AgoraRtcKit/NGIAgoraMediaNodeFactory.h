@@ -10,7 +10,6 @@
 #include "AgoraRefPtr.h"
 #include "IAgoraService.h"
 #include "NGIAgoraMediaNode.h"
-#include "NGIAgoraExtensionControl.h"
 #include "IAgoraMediaPlayerSource.h"
 #include "NGIAgoraCameraCapturer.h"
 #include "NGIAgoraScreenCapturer.h"
