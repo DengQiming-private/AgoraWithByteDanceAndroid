@@ -1,15 +1,23 @@
-// Copyright 2016 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// Copyright (c) 2019 Agora.io. All rights reserved
 
-#ifndef BASE_OPTIONAL_H_
-#define BASE_OPTIONAL_H_
+// This program is confidential and proprietary to Agora.io.
+// And may not be copied, reproduced, modified, disclosed to others, published
+// or used, in whole or in part, without the express prior written permission
+// of Agora.io.
+#pragma once
 
 #include <type_traits>
 #include <utility>
 
+#ifndef CONSTEXPR
+#if __cplusplus <= 199711L
+#define CONSTEXPR
+#else
+#define CONSTEXPR constexpr
+#endif  // __cplusplus <= 199711L
+#endif  // !CONSTEXPR
+
 namespace agora {
-namespace base {
 
 // Specification:
 // http://en.cppreference.com/w/cpp/utility/optional/in_place_t
@@ -18,16 +26,16 @@ struct in_place_t {};
 // Specification:
 // http://en.cppreference.com/w/cpp/utility/optional/nullopt_t
 struct nullopt_t {
-  constexpr explicit nullopt_t(int) {}
+  CONSTEXPR explicit nullopt_t(int) {}
 };
 
 // Specification:
 // http://en.cppreference.com/w/cpp/utility/optional/in_place
-constexpr in_place_t in_place = {};
+/*CONSTEXPR*/ const in_place_t in_place = {};
 
 // Specification:
 // http://en.cppreference.com/w/cpp/utility/optional/nullopt
-constexpr nullopt_t nullopt(0);
+/*CONSTEXPR*/ const nullopt_t nullopt(0);
 
 // Forward declaration, which is refered by following helpers.
 template <typename T>
@@ -39,10 +47,10 @@ template <typename T>
 struct OptionalStorageBase {
   // Initializing |empty_| here instead of using default member initializing
   // to avoid errors in g++ 4.8.
-  constexpr OptionalStorageBase() : empty_('\0') {}
+  CONSTEXPR OptionalStorageBase() : is_populated_(false), empty_('\0') {}
 
   template <class... Args>
-  constexpr explicit OptionalStorageBase(in_place_t, Args&&... args)
+  CONSTEXPR explicit OptionalStorageBase(in_place_t, Args&&... args)
       : is_populated_(true), value_(std::forward<Args>(args)...) {}
 
   // When T is not trivially destructible we must call its
@@ -67,7 +75,8 @@ struct OptionalStorageBase {
     is_populated_ = true;
   }
 
-  bool is_populated_ = false;
+  bool is_populated_;
+
   union {
     // |empty_| exists so that the union will always be initialized, even when
     // it doesn't contain a value. Union members must be initialized for the
@@ -96,11 +105,15 @@ struct OptionalStorage : OptionalStorageBase<T> {
   using OptionalStorageBase<T>::Init;
 
   // Inherit constructors (specifically, the in_place constructor).
-  using OptionalStorageBase<T>::OptionalStorageBase;
+  //using OptionalStorageBase<T>::OptionalStorageBase;
+
+  template <class... Args>
+  CONSTEXPR explicit OptionalStorage(in_place_t in_place, Args&&... args)
+      : OptionalStorageBase<T>(in_place, std::forward<Args>(args)...) {}
 
   // User defined constructor deletes the default constructor.
   // Define it explicitly.
-  OptionalStorage() = default;
+  OptionalStorage() {}
 
   OptionalStorage(const OptionalStorage& other) {
     if (other.is_populated_)
@@ -122,12 +135,12 @@ class OptionalBase {
   // should be hidden. Often we use composition, but we cannot in this case
   // because of C++ language restriction.
  protected:
-  constexpr OptionalBase() = default;
-  constexpr OptionalBase(const OptionalBase& other) = default;
-  constexpr OptionalBase(OptionalBase&& other) = default;
+  CONSTEXPR OptionalBase() {}
+  CONSTEXPR OptionalBase(const OptionalBase& other) : storage_(other.storage_) {}
+  CONSTEXPR OptionalBase(OptionalBase&& other) : storage_(std::move(other.storage_)) {}
 
   template <class... Args>
-  constexpr explicit OptionalBase(in_place_t, Args&&... args)
+  CONSTEXPR explicit OptionalBase(in_place_t, Args&&... args)
       : storage_(in_place, std::forward<Args>(args)...) {}
 
   // Implementation of converting constructors.
@@ -143,7 +156,7 @@ class OptionalBase {
       storage_.Init(std::move(other.storage_.value_));
   }
 
-  ~OptionalBase() = default;
+  ~OptionalBase() {}
 
   OptionalBase& operator=(const OptionalBase& other) {
     CopyAssign(other);
@@ -205,11 +218,13 @@ struct CopyConstructible {};
 
 template <>
 struct CopyConstructible<false> {
-  constexpr CopyConstructible() = default;
-  constexpr CopyConstructible(const CopyConstructible&) = delete;
-  constexpr CopyConstructible(CopyConstructible&&) = default;
-  CopyConstructible& operator=(const CopyConstructible&) = default;
-  CopyConstructible& operator=(CopyConstructible&&) = default;
+  CONSTEXPR CopyConstructible() {}
+  CONSTEXPR CopyConstructible(CopyConstructible&&) {}
+  CopyConstructible& operator=(const CopyConstructible&) { return *this; }
+  CopyConstructible& operator=(CopyConstructible&&) { return *this; }
+
+ private:
+  CONSTEXPR CopyConstructible(const CopyConstructible&);
 };
 
 template <bool is_move_constructible>
@@ -217,11 +232,13 @@ struct MoveConstructible {};
 
 template <>
 struct MoveConstructible<false> {
-  constexpr MoveConstructible() = default;
-  constexpr MoveConstructible(const MoveConstructible&) = default;
-  constexpr MoveConstructible(MoveConstructible&&) = delete;
-  MoveConstructible& operator=(const MoveConstructible&) = default;
-  MoveConstructible& operator=(MoveConstructible&&) = default;
+  CONSTEXPR MoveConstructible() {}
+  CONSTEXPR MoveConstructible(const MoveConstructible&) {}
+  MoveConstructible& operator=(const MoveConstructible&) { return *this; }
+  MoveConstructible& operator=(MoveConstructible&&) { return *this; }
+
+ private:
+  CONSTEXPR MoveConstructible(MoveConstructible&&);
 };
 
 template <bool is_copy_assignable>
@@ -229,11 +246,13 @@ struct CopyAssignable {};
 
 template <>
 struct CopyAssignable<false> {
-  constexpr CopyAssignable() = default;
-  constexpr CopyAssignable(const CopyAssignable&) = default;
-  constexpr CopyAssignable(CopyAssignable&&) = default;
-  CopyAssignable& operator=(const CopyAssignable&) = delete;
-  CopyAssignable& operator=(CopyAssignable&&) = default;
+  CONSTEXPR CopyAssignable() {}
+  CONSTEXPR CopyAssignable(const CopyAssignable&) {}
+  CONSTEXPR CopyAssignable(CopyAssignable&&) {}
+  CopyAssignable& operator=(CopyAssignable&&) { return *this; }
+
+ private:
+  CopyAssignable& operator=(const CopyAssignable&);
 };
 
 template <bool is_move_assignable>
@@ -241,11 +260,13 @@ struct MoveAssignable {};
 
 template <>
 struct MoveAssignable<false> {
-  constexpr MoveAssignable() = default;
-  constexpr MoveAssignable(const MoveAssignable&) = default;
-  constexpr MoveAssignable(MoveAssignable&&) = default;
-  MoveAssignable& operator=(const MoveAssignable&) = default;
-  MoveAssignable& operator=(MoveAssignable&&) = delete;
+  CONSTEXPR MoveAssignable() {}
+  CONSTEXPR MoveAssignable(const MoveAssignable&) {}
+  CONSTEXPR MoveAssignable(MoveAssignable&&) {}
+  MoveAssignable& operator=(const MoveAssignable&) { return *this; }
+
+ private:
+  MoveAssignable& operator=(MoveAssignable&&);
 };
 
 // Helper to conditionally enable converting constructors and assign operators.
@@ -301,12 +322,12 @@ struct IsSwappable : decltype(swappable_impl::IsSwappableImpl::Check<T&>(0)) {};
 // cf)
 // https://blogs.msdn.microsoft.com/vcblog/2016/03/30/optimizing-the-layout-of-empty-base-classes-in-vs2015-update-2-3/
 #ifdef OS_WIN
-#define OPTIONAL_DECLSPEC_EMPTY_BASES __declspec(empty_bases)
+#define OPTIONAL_DECLSPEC_EMPTY_BASES
 #else
 #define OPTIONAL_DECLSPEC_EMPTY_BASES
 #endif
 
-// base::Optional is a Chromium version of the C++17 optional class:
+// Optional is a Chromium version of the C++17 optional class:
 // std::optional documentation:
 // http://en.cppreference.com/w/cpp/utility/optional
 // Chromium documentation:
@@ -336,13 +357,14 @@ class OPTIONAL_DECLSPEC_EMPTY_BASES Optional
                                       std::is_move_assignable<T>::value> {
  public:
 #undef OPTIONAL_DECLSPEC_EMPTY_BASES
-  using value_type = T;
+
+  typedef T value_type;
 
   // Defer default/copy/move constructor implementation to OptionalBase.
-  constexpr Optional() = default;
-  constexpr Optional(const Optional& other) = default;
+  CONSTEXPR Optional() {}
+  CONSTEXPR Optional(const Optional& other) : internal::OptionalBase<T>(other) {}
 
-  constexpr Optional(nullopt_t) {}  // NOLINT(runtime/explicit)
+  CONSTEXPR Optional(nullopt_t) {}  // NOLINT(runtime/explicit)
 
   // Converting copy constructor. "explicit" only if
   // std::is_convertible<const U&, T>::value is false. It is implemented by
@@ -357,11 +379,11 @@ class OPTIONAL_DECLSPEC_EMPTY_BASES Optional
   Optional(Optional<U>&& other) : internal::OptionalBase<T>(std::move(other)) {}
 
   template <class... Args>
-  constexpr explicit Optional(in_place_t, Args&&... args)
+  CONSTEXPR explicit Optional(in_place_t, Args&&... args)
       : internal::OptionalBase<T>(in_place, std::forward<Args>(args)...) {}
 
   template <class U, class... Args>
-  constexpr explicit Optional(in_place_t,
+  CONSTEXPR explicit Optional(in_place_t,
                               std::initializer_list<U> il,
                               Args&&... args)
       : internal::OptionalBase<T>(in_place, il, std::forward<Args>(args)...) {}
@@ -369,13 +391,20 @@ class OPTIONAL_DECLSPEC_EMPTY_BASES Optional
   // Forward value constructor. Similar to converting constructors,
   // conditionally explicit.
   template <typename U = value_type>
-  constexpr Optional(U&& value)
+  CONSTEXPR Optional(U&& value)
       : internal::OptionalBase<T>(in_place, std::forward<U>(value)) {}
 
-  ~Optional() = default;
+  ~Optional() {}
 
   // Defer copy-/move- assign operator implementation to OptionalBase.
-  Optional& operator=(const Optional& other) = default;
+  Optional& operator=(const Optional& other) {
+    if (&other  == this) {
+      return *this;
+    }
+
+    internal::OptionalBase<T>::operator=(other);
+    return *this;
+  }
 
   Optional& operator=(nullopt_t) {
     FreeIfNeeded();
@@ -411,10 +440,31 @@ class OPTIONAL_DECLSPEC_EMPTY_BASES Optional
     return storage_.value_;
   }
 
-  constexpr explicit operator bool() const { return storage_.is_populated_; }
+  T& operator*() {
+    return storage_.value_;
+  }
 
-  constexpr bool has_value() const { return storage_.is_populated_; }
+  CONSTEXPR explicit operator bool() const { return storage_.is_populated_; }
 
+  CONSTEXPR bool has_value() const { return storage_.is_populated_; }
+
+#if 1
+  const T& value() const {
+    return storage_.value_;
+  }
+
+  template <class U>
+  CONSTEXPR T value_or(U&& default_value) const {
+    // TODO(mlamouri): add the following assert when possible:
+    // static_assert(std::is_copy_constructible<T>::value,
+    //               "T must be copy constructible");
+    static_assert(std::is_convertible<U, T>::value,
+                  "U must be convertible to T");
+    return storage_.is_populated_
+               ? value()
+               : static_cast<T>(std::forward<U>(default_value));
+  }
+#else
   const T& value() const & {
     return storage_.value_;
   }
@@ -424,7 +474,7 @@ class OPTIONAL_DECLSPEC_EMPTY_BASES Optional
   }
 
   template <class U>
-  constexpr T value_or(U&& default_value) const & {
+  CONSTEXPR T value_or(U&& default_value) const & {
     // TODO(mlamouri): add the following assert when possible:
     // static_assert(std::is_copy_constructible<T>::value,
     //               "T must be copy constructible");
@@ -436,7 +486,7 @@ class OPTIONAL_DECLSPEC_EMPTY_BASES Optional
   }
 
   template <class U>
-  constexpr T value_or(U&& default_value) const && {
+  CONSTEXPR T value_or(U&& default_value) const && {
     // TODO(mlamouri): add the following assert when possible:
     // static_assert(std::is_move_constructible<T>::value,
     //               "T must be move constructible");
@@ -446,6 +496,7 @@ class OPTIONAL_DECLSPEC_EMPTY_BASES Optional
                ? std::move(value())
                : static_cast<T>(std::forward<U>(default_value));
   }
+#endif  // 1
 
   void swap(Optional& other) {
     if (!storage_.is_populated_ && !other.storage_.is_populated_)
@@ -461,7 +512,6 @@ class OPTIONAL_DECLSPEC_EMPTY_BASES Optional
       }
       return;
     }
-
     using std::swap;
     swap(**this, *other);
   }
@@ -551,132 +601,132 @@ bool operator>=(const Optional<T>& lhs, const Optional<U>& rhs) {
 }
 
 template <class T>
-constexpr bool operator==(const Optional<T>& opt, nullopt_t) {
+CONSTEXPR bool operator==(const Optional<T>& opt, nullopt_t) {
   return !opt;
 }
 
 template <class T>
-constexpr bool operator==(nullopt_t, const Optional<T>& opt) {
+CONSTEXPR bool operator==(nullopt_t, const Optional<T>& opt) {
   return !opt;
 }
 
 template <class T>
-constexpr bool operator!=(const Optional<T>& opt, nullopt_t) {
+CONSTEXPR bool operator!=(const Optional<T>& opt, nullopt_t) {
   return opt.has_value();
 }
 
 template <class T>
-constexpr bool operator!=(nullopt_t, const Optional<T>& opt) {
+CONSTEXPR bool operator!=(nullopt_t, const Optional<T>& opt) {
   return opt.has_value();
 }
 
 template <class T>
-constexpr bool operator<(const Optional<T>& opt, nullopt_t) {
+CONSTEXPR bool operator<(const Optional<T>& opt, nullopt_t) {
   return false;
 }
 
 template <class T>
-constexpr bool operator<(nullopt_t, const Optional<T>& opt) {
+CONSTEXPR bool operator<(nullopt_t, const Optional<T>& opt) {
   return opt.has_value();
 }
 
 template <class T>
-constexpr bool operator<=(const Optional<T>& opt, nullopt_t) {
+CONSTEXPR bool operator<=(const Optional<T>& opt, nullopt_t) {
   return !opt;
 }
 
 template <class T>
-constexpr bool operator<=(nullopt_t, const Optional<T>& opt) {
+CONSTEXPR bool operator<=(nullopt_t, const Optional<T>& opt) {
   return true;
 }
 
 template <class T>
-constexpr bool operator>(const Optional<T>& opt, nullopt_t) {
+CONSTEXPR bool operator>(const Optional<T>& opt, nullopt_t) {
   return opt.has_value();
 }
 
 template <class T>
-constexpr bool operator>(nullopt_t, const Optional<T>& opt) {
+CONSTEXPR bool operator>(nullopt_t, const Optional<T>& opt) {
   return false;
 }
 
 template <class T>
-constexpr bool operator>=(const Optional<T>& opt, nullopt_t) {
+CONSTEXPR bool operator>=(const Optional<T>& opt, nullopt_t) {
   return true;
 }
 
 template <class T>
-constexpr bool operator>=(nullopt_t, const Optional<T>& opt) {
+CONSTEXPR bool operator>=(nullopt_t, const Optional<T>& opt) {
   return !opt;
 }
 
 template <class T, class U>
-constexpr bool operator==(const Optional<T>& opt, const U& value) {
+CONSTEXPR bool operator==(const Optional<T>& opt, const U& value) {
   return opt.has_value() ? *opt == value : false;
 }
 
 template <class T, class U>
-constexpr bool operator==(const U& value, const Optional<T>& opt) {
+CONSTEXPR bool operator==(const U& value, const Optional<T>& opt) {
   return opt.has_value() ? value == *opt : false;
 }
 
 template <class T, class U>
-constexpr bool operator!=(const Optional<T>& opt, const U& value) {
+CONSTEXPR bool operator!=(const Optional<T>& opt, const U& value) {
   return opt.has_value() ? *opt != value : true;
 }
 
 template <class T, class U>
-constexpr bool operator!=(const U& value, const Optional<T>& opt) {
+CONSTEXPR bool operator!=(const U& value, const Optional<T>& opt) {
   return opt.has_value() ? value != *opt : true;
 }
 
 template <class T, class U>
-constexpr bool operator<(const Optional<T>& opt, const U& value) {
+CONSTEXPR bool operator<(const Optional<T>& opt, const U& value) {
   return opt.has_value() ? *opt < value : true;
 }
 
 template <class T, class U>
-constexpr bool operator<(const U& value, const Optional<T>& opt) {
+CONSTEXPR bool operator<(const U& value, const Optional<T>& opt) {
   return opt.has_value() ? value < *opt : false;
 }
 
 template <class T, class U>
-constexpr bool operator<=(const Optional<T>& opt, const U& value) {
+CONSTEXPR bool operator<=(const Optional<T>& opt, const U& value) {
   return opt.has_value() ? *opt <= value : true;
 }
 
 template <class T, class U>
-constexpr bool operator<=(const U& value, const Optional<T>& opt) {
+CONSTEXPR bool operator<=(const U& value, const Optional<T>& opt) {
   return opt.has_value() ? value <= *opt : false;
 }
 
 template <class T, class U>
-constexpr bool operator>(const Optional<T>& opt, const U& value) {
+CONSTEXPR bool operator>(const Optional<T>& opt, const U& value) {
   return opt.has_value() ? *opt > value : false;
 }
 
 template <class T, class U>
-constexpr bool operator>(const U& value, const Optional<T>& opt) {
+CONSTEXPR bool operator>(const U& value, const Optional<T>& opt) {
   return opt.has_value() ? value > *opt : true;
 }
 
 template <class T, class U>
-constexpr bool operator>=(const Optional<T>& opt, const U& value) {
+CONSTEXPR bool operator>=(const Optional<T>& opt, const U& value) {
   return opt.has_value() ? *opt >= value : false;
 }
 
 template <class T, class U>
-constexpr bool operator>=(const U& value, const Optional<T>& opt) {
+CONSTEXPR bool operator>=(const U& value, const Optional<T>& opt) {
   return opt.has_value() ? value >= *opt : true;
 }
 
 template <class T, class... Args>
-constexpr Optional<T> make_optional(Args&&... args) {
+CONSTEXPR Optional<T> make_optional(Args&&... args) {
   return Optional<T>(in_place, std::forward<Args>(args)...);
 }
 
 template <class T, class U, class... Args>
-constexpr Optional<T> make_optional(std::initializer_list<U> il,
+CONSTEXPR Optional<T> make_optional(std::initializer_list<U> il,
                                     Args&&... args) {
   return Optional<T>(in_place, il, std::forward<Args>(args)...);
 }
@@ -690,18 +740,18 @@ void swap(Optional<T>& lhs, Optional<T>& rhs) {
   lhs.swap(rhs);
 }
 
-}  // namespace base
 }  // namespace agora
 
 namespace std {
 
 template <class T>
-struct hash<agora::base::Optional<T>> {
-  size_t operator()(const agora::base::Optional<T>& opt) const {
-    return opt == agora::base::nullopt ? 0 : std::hash<T>()(*opt);
+struct hash<agora::Optional<T>> {
+  size_t operator()(const agora::Optional<T>& opt) const {
+    return opt == agora::nullopt ? 0 : std::hash<T>()(*opt);
   }
 };
 
 }  // namespace std
 
-#endif  // BASE_OPTIONAL_H_
+#undef CONSTEXPR
+

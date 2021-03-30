@@ -38,6 +38,16 @@
   */
 #define KEY_RTC_VIDEO_ENABLED_HW_DECODER             "engine.video.enable_hw_decoder"
 
+ /**
+  * set the hardware video encoder provider (nv for nvidia or qsv for intel)
+  */
+#define KEY_RTC_VIDEO_HW_ENCODER_PROVIDER            "engine.video.hw_encoder_provider"
+
+ /**
+  * override the lua policy
+  */
+#define KEY_RTC_VIDEO_OVERRIDE_SMALLVIDEO_NOT_USE_HWENC_POLICY  "engine.video.override_smallvideo_not_use_hwenc_policy"
+
 /**
   * enable/disable video packet retransmission, enabled by default
  */
@@ -47,6 +57,66 @@
   * enable/disable audio packet retransmission, enabled by default
 */
 #define KEY_RTC_AUDIO_RESEND                         "rtc.audio_resend"
+
+/**
+  * enable/disable agora aec logic, enabled by default
+*/
+#define KEY_RTC_AUDIO_ENABLE_AGORA_AEC               "rtc.audio.aec.enable"
+
+/**
+  * enable/disable agora agc logic, enabled by default
+*/
+#define KEY_RTC_AUDIO_ENABLE_AGORA_AGC               "rtc.audio.agc.enable"
+
+/**
+  * enable/disable agora ans logic, enabled by default
+*/
+#define KEY_RTC_AUDIO_ENABLE_AGORA_ANS               "rtc.audio.ans.enable"
+
+/**
+  * enable/disable agora md logic, enabled by default
+*/
+#define KEY_RTC_AUDIO_ENABLE_AGORA_MD                "rtc.audio.md.enable"
+
+/**
+  * set the bitrate ratio for video
+*/
+#define KEY_RTC_VIDEO_BITRATE_ADJUST_RATIO           "rtc.video.bitrate_adjust_ratio"
+
+/**
+  * set the minbitrate / bitrate ratio for video
+*/
+#define KEY_RTC_VIDEO_MINBITRATE_RATIO               "rtc.video.minbitrate_ratio"
+
+/**
+  * set the degradation preference
+*/
+#define KEY_RTC_VIDEO_DEGRADATION_PREFERENCE         "rtc.video.degradation_preference"
+
+/**
+  * set the degradation fps down step
+*/
+
+#define KEY_RTC_VIDEO_DEGRADATION_FPS_DOWN_STEP      "rtc.video.degradation_fps_down_step"
+/**
+  * set the degradation fps up step
+*/
+#define KEY_RTC_VIDEO_DEGRADATION_FPS_UP_STEP        "rtc.video.degradation_fps_up_step"
+
+/**
+  * only use average QP for quality scaling
+*/
+#define KEY_RTC_VIDEO_QUALITY_SCALE_ONLY_ON_AVERAGE_QP "engine.video.quality_scale_only_on_average_qp"
+
+/**
+  * low bound for quality scaling
+*/
+#define KEY_RTC_VIDEO_H264_QP_THRESHOLD_LOW         "engine.video.h264_qp_thresholds_low"
+
+/**
+  * high bound for quality scaling
+*/
+#define KEY_RTC_VIDEO_H264_QP_THRESHOLD_HIGH        "engine.video.h264_qp_thresholds_high"
 
 namespace agora {
 

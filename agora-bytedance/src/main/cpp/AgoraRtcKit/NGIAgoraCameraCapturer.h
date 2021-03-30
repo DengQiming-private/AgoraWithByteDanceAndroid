@@ -13,7 +13,6 @@ namespace agora {
 namespace rtc {
 class IVideoSinkBase;
 class ICameraCaptureObserver;
-class IVideoRenderer;
 /**
  * The ICameraCapturer class, which provides access to a camera capturer.
  */
@@ -25,13 +24,13 @@ class ICameraCapturer : public RefCountInterface {
    */
   enum CAMERA_SOURCE {
     /**
-     * The camera source is the front camera.
-     */
-    CAMERA_FRONT,
-    /**
      * The camera source is the rear camera.
      */
     CAMERA_BACK,
+    /**
+     * The camera source is the front camera.
+     */
+    CAMERA_FRONT,
   };
 
   // Interface for receiving information about available camera devices.
@@ -40,7 +39,7 @@ class ICameraCapturer : public RefCountInterface {
    */
   class IDeviceInfo {
    public:
-    virtual ~IDeviceInfo() = default;
+    virtual ~IDeviceInfo() {}
 
     /**
      * Releases the device.
@@ -152,6 +151,16 @@ class ICameraCapturer : public RefCountInterface {
    * - < 0: Failure.
    */
   virtual int initWithDeviceName(const char* deviceName) = 0;
+  /**
+   * Set the device orientation of the capture device
+   * @param VIDEO_ORIENTATION orientaion of the device 0(by default), 90, 180, 270
+   */
+  virtual void setDeviceOrientation(VIDEO_ORIENTATION orientation) = 0;
+  /**
+   * Get the device orientation of the capture device
+   * @return VIDEO_ORIENTATION orientaion of the device 0(by default), 90, 180, 270
+   */
+  virtual VIDEO_ORIENTATION getDeviceOrientation() = 0;
 #endif
 
   /**

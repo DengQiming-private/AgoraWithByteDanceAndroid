@@ -1,5 +1,6 @@
 package agoramarketplace.bytedance.labcv;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -14,6 +15,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,18 +33,21 @@ import io.agora.rtc2.IRtcEngineEventHandler;
 import io.agora.rtc2.RtcEngine;
 import io.agora.rtc2.RtcEngineConfig;
 import io.agora.rtc2.video.VideoCanvas;
+import io.agora.rtc2.video.VideoEncoderConfiguration;
+
+import static io.agora.rtc2.Constants.VideoSourceType.VIDEO_SOURCE_CAMERA_PRIMARY;
 
 
 public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.OnUtilsAsyncTaskEvents, io.agora.rtc2.IMediaExtensionObserver {
 
     private static final String[] REQUESTED_PERMISSIONS = {
             Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.CAMERA,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
+            Manifest.permission.CAMERA
     };
 
     private static final String appId = "#YOUR APP ID#";
     private final static String TAG = "Agora_zt java :";
+    private final static String channelName = "agora_extension";
     private static final int PERMISSION_REQ_ID = 22;
     private FrameLayout localVideoContainer;
     private FrameLayout remoteVideoContainer;
@@ -57,32 +62,46 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initUI();
         checkPermission();
-        File dstFile = getExternalFilesDir("assets");
 
         if (!ResourceHelper.isResourceReady(this, 1)) {
             Log.d("Agora_zt", "Resource is not ready, need to copy resource");
             infoTextView.setText("Resource is not ready, need to copy resource");
+            beautyButton.setEnabled(false);
             new UtilsAsyncTask(this, this).execute();
         } else {
             Log.d("Agora_zt", "Resource is ready");
             infoTextView.setText("Resource is ready");
+            beautyButton.setEnabled(true);
         }
     }
 
     @Override
     protected void onDestroy() {
+        Log.d(TAG, "onDestroy");
         super.onDestroy();
+        mRtcEngine.leaveChannel();
+        mRtcEngine.destroy();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     private void checkPermission() {
+        Log.d(TAG, "checkPermission");
         if (checkSelfPermission(REQUESTED_PERMISSIONS[0], PERMISSION_REQ_ID) &&
-                checkSelfPermission(REQUESTED_PERMISSIONS[1], PERMISSION_REQ_ID) &&
-                checkSelfPermission(REQUESTED_PERMISSIONS[2], PERMISSION_REQ_ID)) {
+                checkSelfPermission(REQUESTED_PERMISSIONS[1], PERMISSION_REQ_ID)) {
+            initAgoraEngine();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQ_ID && grantResults.length > 0 &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED){
             initAgoraEngine();
         }
     }
@@ -95,7 +114,34 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
         beautyButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                enableEffect();
+                if (beautyButton.isSelected()){
+                    Log.d(TAG, "disable beauty filter");
+                    beautyButton.setSelected(false);
+                    beautyButton.setText(R.string.beauty_enable);
+                    disableEffect();
+                }else{
+                    Log.d(TAG, "enable beauty filter");
+                    beautyButton.setSelected(true);
+                    beautyButton.setText(R.string.beauty_disable);
+                    enableEffect();
+                }
+            }
+        });
+        SeekBar seek = (SeekBar) findViewById(R.id.seek);
+        seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                mRtcEngine.setExtensionProperty(VIDEO_SOURCE_CAMERA_PRIMARY, ExtensionManager.VENDOR_NAME, "volume", ""+i);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
             }
         });
     }
@@ -114,9 +160,10 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             RtcEngineConfig config = new RtcEngineConfig();
             config.mContext = this;
             config.mAppId = appId;
-            long provider = ExtensionManager.nativeGetExtensionProvider(this);
+            long provider = ExtensionManager.nativeGetExtensionProvider(this, ExtensionManager.VENDOR_NAME);
             Log.d(TAG, "Extension provider: " + provider);
-            config.addExtension(ExtensionManager.VENDOR_NAME, provider, this);
+            config.addExtension(ExtensionManager.VENDOR_NAME, provider);
+            config.mExtensionObserver = this;
             config.mEventHandler = new IRtcEngineEventHandler() {
                 @Override
                 public void onJoinChannelSuccess(String s, int i, int i1) {
@@ -159,17 +206,20 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
                 }
             };
             mRtcEngine = RtcEngine.create(config);
-            mRtcEngine.enableExtension(ExtensionManager.VENDOR_NAME, true);
+//            mRtcEngine.enableExtension(ExtensionManager.VENDOR_NAME, true);
             setupLocalVideo();
-
+            VideoEncoderConfiguration configuration = new VideoEncoderConfiguration(640, 360,
+                    VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_30,
+                    VideoEncoderConfiguration.STANDARD_BITRATE,
+                    VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_ADAPTIVE);
+            mRtcEngine.setVideoEncoderConfiguration(configuration);
             mRtcEngine.setChannelProfile(Constants.CHANNEL_PROFILE_LIVE_BROADCASTING);
             mRtcEngine.setClientRole(Constants.CLIENT_ROLE_BROADCASTER);
-            mRtcEngine.setParameters("{\"rtc.log_filter\": 65535}");
             mRtcEngine.enableLocalVideo(true);
             mRtcEngine.enableVideo();
             mRtcEngine.enableAudio();
             Log.d(TAG, "api call join channel");
-            mRtcEngine.joinChannel("", "agora_test", "", 0);
+            mRtcEngine.joinChannel("", channelName, "", 0);
             mRtcEngine.startPreview();
         } catch (Exception e) {
             e.printStackTrace();
@@ -266,7 +316,20 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
 //            arr.put(node4);
             o.put("plugin.bytedance.ai.composer.nodes", arr);
 
-            ExtensionManager.nativeSetParameters(o.toString());
+            mRtcEngine.setExtensionProperty(VIDEO_SOURCE_CAMERA_PRIMARY, ExtensionManager.VENDOR_NAME, "key", o.toString());
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void disableEffect() {
+        JSONObject o = new JSONObject();
+        try {
+            o.put("plugin.bytedance.aiEffectEnabled", false);
+            o.put("plugin.bytedance.faceAttributeEnabled", false);
+            o.put("plugin.bytedance.faceStickerEnabled", false);
+            o.put("plugin.bytedance.handDetectEnabled", false);
+            mRtcEngine.setExtensionProperty(VIDEO_SOURCE_CAMERA_PRIMARY, ExtensionManager.VENDOR_NAME, "key", o.toString());
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -282,12 +345,12 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
         ResourceHelper.setResourceReady(this, true, 1);
         Toast.makeText(this, "copy resource Ready", Toast.LENGTH_LONG).show();
         infoTextView.setText("Resource is ready");
+        beautyButton.setEnabled(true);
     }
 
     @Override
     public void onEvent(String vendor, String key, String value) {
         try {
-
             JSONObject o = new JSONObject(value);
             if (o.has("plugin.bytedance.light.info")) {
                 StringBuilder sb = new StringBuilder();

@@ -17,6 +17,11 @@ namespace agora {
 namespace rtc {
 class IVideoFilter;
 
+enum VideoTrackType {
+  LOCAL_VIDEO_TRACK,
+  REMOTE_VIDEO_TRACK,
+};
+
 /**
  * The `IVideoTrack` class defines the behavior and status of a video track.
  */
@@ -73,6 +78,12 @@ class IVideoTrack : public RefCountInterface {
    * - `false`: The video renderer fails to be removed.
    */
   virtual bool removeRenderer(agora_refptr<IVideoSinkBase> videoRenderer, media::IVideoFrameObserver::VIDEO_OBSERVER_POSITION position = media::IVideoFrameObserver::POSITION_POST_FILTERS) = 0;
+  /**
+   * Get the track type of the video track
+   * @return
+   * - VideoTrackType
+   */
+  virtual VideoTrackType getType() = 0;
 
   /**
    * Enable / Disable specified video filter
@@ -82,7 +93,11 @@ class IVideoTrack : public RefCountInterface {
    * - 0: success
    * - <0: failure
    */
-  virtual int enableVideoFilter(const char* id, bool enable) { return -1; }
+  virtual int enableVideoFilter(const char* id, bool enable) {
+    (void)id;
+    (void)enable;
+    return -1;
+  }
 
   /**
    * set the properties of the specified video filter
@@ -93,7 +108,12 @@ class IVideoTrack : public RefCountInterface {
    * - 0: success
    * - <0: failure
    */
-  virtual int setFilterProperty(const char* id, const char* key, const char* json_value) { return -1; }
+  virtual int setFilterProperty(const char* id, const char* key, const char* json_value) {
+    (void)id;
+    (void)key;
+    (void)json_value;
+    return -1;
+  }
 
   /**
    * get the properties of the specified video filter
@@ -104,7 +124,13 @@ class IVideoTrack : public RefCountInterface {
    * - 0: success
    * - <0: failure
    */
-  virtual int getFilterProperty(const char* id, const char* key, char* json_value, size_t buf_size) { return -1; }
+  virtual int getFilterProperty(const char* id, const char* key, char* json_value, size_t buf_size) {
+    (void)id;
+    (void)key;
+    (void)json_value;
+    (void)buf_size;
+    return -1;
+  }
 
  protected:
   ~IVideoTrack() {}
@@ -114,21 +140,39 @@ class IVideoTrack : public RefCountInterface {
  * Statistics of the local video track.
  */
 struct LocalVideoTrackStats {
-  uint64_t number_of_streams = 0;
-  uint64_t bytes_major_stream = 0;
-  uint64_t bytes_minor_stream = 0;
-  uint32_t frames_encoded = 0;
-  uint32_t ssrc_major_stream = 0;
-  uint32_t ssrc_minor_stream = 0;
-  int input_frame_rate = 0;
-  int encode_frame_rate = 0;
-  int render_frame_rate = 0;
-  int target_media_bitrate_bps = 0;
-  int media_bitrate_bps = 0;
-  int total_bitrate_bps = 0;  // Include FEC
-  int width = 0;
-  int height = 0;
-  uint32_t encoder_type = 0;
+  uint64_t number_of_streams;
+  uint64_t bytes_major_stream;
+  uint64_t bytes_minor_stream;
+  uint32_t frames_encoded;
+  uint32_t ssrc_major_stream;
+  uint32_t ssrc_minor_stream;
+  int input_frame_rate; // captureFrameRate
+  int encode_frame_rate;
+  int render_frame_rate;
+  int target_media_bitrate_bps;
+  int media_bitrate_bps;
+  int total_bitrate_bps;  // Include FEC
+  int width;
+  int height;
+  int lost_ratio = 0; // txPacketLossRate
+  uint32_t encoder_type;
+
+  LocalVideoTrackStats() : number_of_streams(0),
+                           bytes_major_stream(0),
+                           bytes_minor_stream(0),
+                           frames_encoded(0),
+                           ssrc_major_stream(0),
+                           ssrc_minor_stream(0),
+                           input_frame_rate(0),
+                           encode_frame_rate(0),
+                           render_frame_rate(0),
+                           target_media_bitrate_bps(0),
+                           media_bitrate_bps(0),
+                           total_bitrate_bps(0),
+                           width(0),
+                           height(0),
+                           lost_ratio(0),
+                           encoder_type(0) {}
 };
 
 /**
@@ -203,6 +247,8 @@ class ILocalVideoTrack : public IVideoTrack {
    */
   virtual bool getStatistics(LocalVideoTrackStats& stats) = 0;
 
+  virtual VideoTrackType getType() { return LOCAL_VIDEO_TRACK; }
+
  protected:
   ~ILocalVideoTrack() {}
 };
@@ -243,9 +289,9 @@ struct RemoteVideoTrackStats {
 	 */
 	int packetLossRate;
    /**
-    * The remote video stream type: #REMOTE_VIDEO_STREAM_TYPE.
+    * The remote video stream type: #VIDEO_STREAM_TYPE.
     */
-	REMOTE_VIDEO_STREAM_TYPE rxStreamType;
+	VIDEO_STREAM_TYPE rxStreamType;
 	/**
 	 The total freeze time (ms) of the remote video stream after the remote user joins the channel.
 	 In a video session where the frame rate is set to no less than 5 fps, video freeze occurs when
@@ -260,6 +306,16 @@ struct RemoteVideoTrackStats {
 	 The total video decoded frames.
 	 */
 	uint32_t totalDecodedFrames;
+	/**
+	 The offset (ms) between audio and video stream. A positive value indicates the audio leads the
+	 video, and a negative value indicates the audio lags the video.
+	 */
+	int avSyncTimeMs;
+
+    RemoteVideoTrackStats() : uid(0), delay(0), width(0), height(0),
+                              receivedBitrate(0), decoderOutputFrameRate(0), rendererOutputFrameRate(0),
+                              frameLossRate(0), packetLossRate(0), rxStreamType(VIDEO_STREAM_HIGH),
+                              totalFrozenTime(0), frozenRate(0), totalDecodedFrames(0), avSyncTimeMs(0) {}
 };
 
 /**
@@ -332,6 +388,8 @@ class IRemoteVideoTrack : public IVideoTrack {
    * - < 0: Failure.
    */
   virtual int unregisterMediaPacketReceiver(IMediaPacketReceiver* videoReceiver) = 0;
+
+  virtual VideoTrackType getType() { return REMOTE_VIDEO_TRACK; }
 
  protected:
   ~IRemoteVideoTrack() {}

@@ -6,24 +6,19 @@
 
 #pragma once  // NOLINT(build/header_guard)
 
+#include <cstring>
+
 #include "AgoraBase.h"
 #include "AgoraRefPtr.h"
 
 namespace agora {
-namespace media {
-namespace base {
-class IAudioFrameObserver;
-} // namespace base
-} // namespace media
-
 namespace rtc {
 
 static const int kAdmMaxDeviceNameSize = 128;
 static const int kAdmMaxGuidSize = 128;
 static const int kIntervalInMillseconds = 200;
 
-
-#if defined(_WIN32) || !(TARGET_OS_IPHONE) && (TARGET_OS_MAC)
+#if defined(_WIN32) || ((!defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE) && (defined(TARGET_OS_MAC) && TARGET_OS_MAC))
 /**
  * The struct of AudioDeviceInfo.
  *
@@ -34,25 +29,31 @@ struct AudioDeviceInfo {
   /**
    * The name of the device. The maximum name size is 128 bytes. The default value is 0.
    */
-  char deviceName[kAdmMaxDeviceNameSize] = { 0 };
+  char deviceName[kAdmMaxDeviceNameSize];
   /**
    * The ID of the device. The maximum size is 128 bytes. The default value is 0.
    */
-  char deviceId[kAdmMaxGuidSize] = { 0 };
+  char deviceId[kAdmMaxGuidSize];
   /**
    * Determines whether the current device is selected for audio capturing or playback.
    * - true: Select the current device for audio capturing or playback.
    * - false: (Default) Do not select the current device for audio capturing or playback.
    */
-  bool isCurrentSelected { false };
+  bool isCurrentSelected;
   /**
    * Determines whether the current device is the audio playout device.
    * - true: (Default) The current device is the playout device.
    * - false: The current device is not the playout device.
    */
-  bool isPlayoutDevice { true };
+  bool isPlayoutDevice;
+
+  AudioDeviceInfo() : isCurrentSelected(false),
+                      isPlayoutDevice(true) {
+    memset(deviceName, 0, sizeof(deviceName));
+    memset(deviceId, 0, sizeof(deviceId));
+  }
 };
-#endif
+#endif  // _WIN32 || !TARGET_OS_IPHONE && TARGET_OS_MAC
 
 /**
  * The IAudioDeviceManagerObserver class.
@@ -61,16 +62,6 @@ class IAudioDeviceManagerObserver
 {
 public:
   virtual ~IAudioDeviceManagerObserver() {}
-
-  /**
-   * Reports the microphone volume.
-   *
-   * After successfully starting the microphone test, the SDK triggers this callback to report the microphone
-   * volume. You can use this callback to test whether the microphone is working properly.
-   *
-   * @param volume The microphone volume. The value range is [0, 255].
-   */
-  virtual void onVolumeIndication(int volume) = 0;
 
   /**
    * Occurs when the device state changes, for example, when a device is added or removed.
@@ -87,56 +78,6 @@ public:
   virtual void onRoutingChanged(AudioRoute route) = 0;
 };
 
-class IRecordingDeviceSource : public RefCountInterface {
-  public:
-  /**
-   * Initialize the recording device source.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-    virtual int initRecording() = 0;
-
-  /**
-   * Start recording.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-    virtual int startRecording() = 0;
-
-  /**
-   * Stop recording.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-    virtual int stopRecording() = 0;
-
-  /**
-   * Registers an audio frame observer.
-   *
-   * @param observer The pointer to the IAudioFrameObserver object.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-    virtual int registerAudioFrameObserver(media::base::IAudioFrameObserver* observer) = 0;
-
-  /**
-   * Releases the registered IAudioFrameObserver object.
-   *
-   * @param observer The pointer to the IAudioFrameObserver object created by the \ref registerAudioPcmDataCallback
-   * "registerAudioPcmDataCallback" method.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-    virtual int unregisterAudioFrameObserver(media::base::IAudioFrameObserver* observer) = 0;
-
-    virtual ~IRecordingDeviceSource() {}
-};
-
 /**
  * The INGAudioDeciceManager class.
  *
@@ -145,17 +86,6 @@ class IRecordingDeviceSource : public RefCountInterface {
  */
 class INGAudioDeviceManager : public RefCountInterface {
 public:
-	    /**
-   * Creates a audio device source object and returns the pointer.
-   *
-   * @return
-   * - The pointer to \ref rtc::IRecordingDeviceSource "IRecordingDeviceSource", if the method call
-   * succeeds.
-   * - The empty pointer NULL, if the method call fails.
-   */
-  virtual agora_refptr<IRecordingDeviceSource> createRecordingDeviceSource(char deviceId[kAdmMaxDeviceNameSize]) = 0;
-
-  // Volume control
   /**
    * Sets the volume of the microphone.
    * @param volume The volume of the microphone. The value range is [0, 255].
@@ -243,7 +173,7 @@ public:
    */
   virtual int getRecordAudioParameters(AudioParameters* params) const = 0;
 
-#if defined(__ANDROID__) || TARGET_OS_IPHONE
+#if defined(__ANDROID__) || (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
   /**
    * Sets the default audio routing.
    *
@@ -286,7 +216,7 @@ public:
   virtual int getCurrentRouting(AudioRoute& route) = 0;
 #endif
 
-#if defined(_WIN32) || (!defined(TARGET_OS_IPHONE)) && defined(TARGET_OS_MAC)
+#if defined(_WIN32) || ((!defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE) && (defined(TARGET_OS_MAC) && TARGET_OS_MAC))
   /**
    * Gets the index numbers of all audio playout devices.
    *
@@ -412,29 +342,6 @@ public:
 #endif
 
   /**
-   * Starts the microphone test.
-   *
-   * Once you successfully start the microphone test, the SDK reports the volume information of the microphone
-   * at the `indicationInterval` in the onVolumeIndication() callback, regardless of whether anyone is speaking
-   * in the channel.
-   *
-   * @param indicationInterval The time interval between two consecutive `onVolumeIndication` callbacks (ms). The default value is 200 ms.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-  virtual int startMicrophoneTest(
-      int indicationInterval = kIntervalInMillseconds) = 0;
-  /**
-   * Stops the microphone test.
-   *
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-  virtual int stopMicrophoneTest() = 0;
-
-  /**
    * Registers an IAudioDeviceManagerObserver object.
    *
    * You need to implement the IAudioDeviceManageObserver class in this method, and register callbacks
@@ -456,7 +363,7 @@ public:
   virtual int unregisterObserver(IAudioDeviceManagerObserver* observer) = 0;
 
 protected:
-  ~INGAudioDeviceManager() = default;
+  ~INGAudioDeviceManager() {}
 };
 
 } //namespace rtc

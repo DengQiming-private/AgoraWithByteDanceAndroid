@@ -25,6 +25,9 @@ class IExtensionControl {
   struct Capabilities {
     bool audio;
     bool video;
+
+    Capabilities() : audio(false),
+                     video(false) {}
   };
 
   /**
@@ -37,7 +40,7 @@ class IExtensionControl {
    * This method creates an IVideoFrame object with specified type, format, width and height
    * @return
    * - The pointer to \ref agora::rtc::IVideoFrame, if the method call succeeds
-   * - The emply pointer nullptr, if the method call fails
+   * - The emply pointer NULL, if the method call fails
    */
   virtual agora_refptr<IVideoFrame> createVideoFrame(
       IVideoFrame::Type type, IVideoFrame::Format format, int width, int height) = 0;
@@ -46,7 +49,7 @@ class IExtensionControl {
    * This method creates a new IVideoFrame obj by copying from the source video frame
    * @return
    * - The pointer to \ref agora::rtc::IVideoFrame, if the method call succeeds
-   * - The empty pointer nullptr, if the method call fails
+   * - The empty pointer NULL, if the method call fails
    */
   virtual agora_refptr<IVideoFrame> copyVideoFrame(agora_refptr<IVideoFrame> src) = 0;
 

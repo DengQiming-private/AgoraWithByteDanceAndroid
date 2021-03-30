@@ -441,6 +441,7 @@ namespace agora {
         }
 
         int ByteDanceProcessor::processFrame(const agora::media::base::VideoFrame &capturedFrame) {
+            PRINTF_INFO("processFrame: w: %d,  h: %d,  r: %d", capturedFrame.width, capturedFrame.height, capturedFrame.rotation);
             const std::lock_guard<std::mutex> lock(mutex_);
 
             if (aiEffectEnabled_ || faceAttributeEnabled_) {
@@ -499,20 +500,8 @@ namespace agora {
                 free(rgbaBuffer_);
                 rgbaBuffer_ = nullptr;
             }
-            prevFrame_ = {
-                    media::base::VIDEO_PIXEL_I420,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    nullptr,
-                    nullptr,
-                    nullptr,
-                    0,
-                    0,
-                    0
-            };
+            prevFrame_.type =
+                    media::base::VIDEO_PIXEL_I420;
 
             faceAttributeEnabled_ = false;
             faceDetectModelPath_.clear();
@@ -542,6 +531,10 @@ namespace agora {
             }
 
             return 0;
+        }
+
+        std::string ByteDanceProcessor::getParameters(std::string parameter){
+            return std::string("dengqm");
         }
 
         int ByteDanceProcessor::setParameters(std::string parameter) {

@@ -1,5 +1,4 @@
 #pragma once
-
 #include "AgoraRefPtr.h"
 #include "AgoraBase.h"
 
@@ -122,7 +121,7 @@ class IVideoFilter : public IVideoFilterBase {
    * - `false`: Do not enable the video filter. If the filter is disabled, frames will be passed without
    * adaption.
    */
-  virtual void setEnabled(bool enable) {}
+  virtual void setEnabled(bool enable) { (void) enable; }
   /**
    * Checks whether the video filter is enabled.
    * @return
@@ -140,7 +139,12 @@ class IVideoFilter : public IVideoFilterBase {
    * - The actual size of the private property, if the method call succeeds.
    * - -1, if the method call fails.
    */
-  virtual size_t setProperty(const char* key, const void* buf, size_t buf_size) { return -1; }
+  virtual size_t setProperty(const char* key, const void* buf, size_t buf_size) {
+    (void)key;
+    (void)buf;
+    (void)buf_size;
+    return -1;
+  }
   /**
    * Gets a private property in the IVideoFilter class.
    *
@@ -151,7 +155,12 @@ class IVideoFilter : public IVideoFilterBase {
    * - The actual size of the private property, if the method call succeeds.
    * - -1, if the method call fails.
    */
-  virtual size_t getProperty(const char* key, void* buf, size_t buf_size) { return -1; }
+  virtual size_t getProperty(const char* key, void* buf, size_t buf_size) {
+    (void) key;
+    (void) buf;
+    (void) buf_size;
+    return -1;
+  }
   /**
    * This function is invoked right before data stream starts.
    * Custom filter can override this function for initialization.
@@ -190,7 +199,12 @@ class IVideoSinkBase : public RefCountInterface {
    * - The actual size of the private property, if the method call succeeds.
    * - -1, if the method call fails.
    */
-  virtual int setProperty(const char* key, const void* buf, int buf_size) { return -1; }
+  virtual int setProperty(const char* key, const void* buf, int buf_size) {
+    (void)key;
+    (void)buf;
+    (void)buf_size;
+    return -1;
+  }
   /**
    * Gets a private property in the `IVideoFilter` class.
    *
@@ -201,7 +215,12 @@ class IVideoSinkBase : public RefCountInterface {
    * - The actual size of the private property, if the method call succeeds.
    * - -1, if the method call fails.
    */
-  virtual int getProperty(const char* key, void* buf, int buf_size) { return -1; }
+  virtual int getProperty(const char* key, void* buf, int buf_size) {
+    (void)key;
+    (void)buf;
+    (void)buf_size;
+    return -1;
+  }
   /**
    * Occurs when the `IVideoSinkBase` object receives the video frame.
    * @param videoFrame The reference to the video frame.
@@ -230,7 +249,11 @@ class IVideoSinkBase : public RefCountInterface {
 class IMediaExtensionObserver : public RefCountInterface {
 public:
   virtual ~IMediaExtensionObserver() {}
-  virtual void onEvent(const char* vendor, const char* key, const char* json_value) {}
+  virtual void onEvent(const char* id, const char* key, const char* json_value) {
+    (void)id;
+    (void)key;
+    (void)json_value;
+  }
 };
 
 /**
@@ -256,7 +279,7 @@ class IAudioPcmDataSender : public RefCountInterface {
   virtual int sendAudioPcmData(
       const void* audio_data, uint32_t capture_timestamp,
       const size_t samples_per_channel,  // for 10ms Data, number_of_samples * 100 = sample_rate
-      const size_t bytes_per_sample,     // 2 * number_of_channels
+      const agora::rtc::BYTES_PER_SAMPLE bytes_per_sample,     // 2
       const size_t number_of_channels,
       const uint32_t sample_rate) = 0;  // sample_rate > 8000
 
@@ -379,7 +402,7 @@ class IMediaControlPacketSender {
    * - `true`: Success.
    * - `false`: Failure.
    */
-  virtual int sendPeerMediaControlPacket(user_id_t userId,
+  virtual int sendPeerMediaControlPacket(media::base::user_id_t userId,
                                          const uint8_t *packet,
                                          size_t length) = 0;
 
@@ -463,7 +486,7 @@ class IVideoEncodedImageSender : public RefCountInterface {
    */
   virtual bool sendEncodedVideoImage(const uint8_t* imageBuffer, size_t length,
                                      const EncodedVideoFrameInfo& videoEncodedFrameInfo) = 0;
-
+ 
  protected:
   ~IVideoEncodedImageSender() {}
 };

@@ -6,7 +6,8 @@
 
 #pragma once  // NOLINT(build/header_guard)
 
-#include <stdint.h>
+#include <cstring>
+#include <cstdint>
 
 /**
  * set analyze duration for real time stream
@@ -58,9 +59,12 @@ enum MEDIA_PLAYER_STATE {
   /** Player paused
    */
   PLAYER_STATE_PAUSED,
-  /** Player playback completed
+  /** Player playback one loop completed
    */
   PLAYER_STATE_PLAYBACK_COMPLETED,
+  /** Player playback all loops completed
+   */
+  PLAYER_STATE_PLAYBACK_ALL_LOOPS_COMPLETED,
   /** Player stopped
    */
   PLAYER_STATE_STOPPED = PLAYER_STATE_IDLE,
@@ -242,7 +246,23 @@ struct MediaStreamInfo { /* the index of the stream in the media file */
   int audioBitsPerSample;
 
   /* stream duration in second */
-  int64_t duration;};
+  int64_t duration;
+
+  MediaStreamInfo() : streamIndex(0),
+                      streamType(STREAM_TYPE_UNKNOWN),
+                      videoFrameRate(0),
+                      videoBitRate(0),
+                      videoWidth(0),
+                      videoHeight(0),
+                      videoRotation(0),
+                      audioSampleRate(0),
+                      audioChannels(0),
+                      audioBitsPerSample(0),
+                      duration(0) {
+    memset(codecName, 0, sizeof(codecName));
+    memset(language, 0, sizeof(language));
+  }
+};
 
 /**
  * @brief Player Metadata type

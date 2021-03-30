@@ -10,7 +10,7 @@
 #include "plugin_source_code/EGLCore.h"
 
 using namespace agora::extension;
-static agora::extension::ExtensionProvider* extensionProvider = nullptr;
+//static agora::extension::ExtensionProvider* extensionProvider = nullptr;
 
 #define CHECK_EXTENSION_PROVIDER_INT if(!extensionProvider) { \
                                 PRINTF_ERROR("Agora extension call api: %s err: %d", __FUNCTION__, ERROR_CODE::ERR_NOT_INIT_EXTENSION_PROVIDER); \
@@ -36,10 +36,11 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
 
 JNIEXPORT void JNI_OnUnload(JavaVM* vm, void* reserved) {
     PRINTF_INFO("JNI_OnUnload");
-    CHECK_EXTENSION_PROVIDER_VOID;
+//    CHECK_EXTENSION_PROVIDER_VOID;
+    agora::extension::ExtensionProvider* extensionProvider = agora::extension::ExtensionProvider::getInstance();
     if (extensionProvider) {
         delete(extensionProvider);
-        extensionProvider = nullptr;
+//        extensionProvider = nullptr;
     }
     JniHelper::release();
 }
@@ -47,24 +48,15 @@ JNIEXPORT void JNI_OnUnload(JavaVM* vm, void* reserved) {
 extern "C" JNIEXPORT jlong JNICALL
 Java_io_agora_extension_ExtensionManager_nativeGetExtensionProvider(
         JNIEnv* env,
-        jclass clazz, jobject context) {
-    if (extensionProvider == nullptr){
+        jclass clazz, jobject context, jstring jVendor) {
+    if (AndroidContextHelper::getContext() == nullptr){
         jobject globalContext = env->NewGlobalRef(context);
         AndroidContextHelper::setContext(globalContext);
-        extensionProvider = new agora::RefCountedObject<agora::extension::ExtensionProvider>();
+//        extensionProvider = new agora::RefCountedObject<agora::extension::ExtensionProvider>();
     }
-    return reinterpret_cast<intptr_t>(extensionProvider);
-}
-
-extern "C" JNIEXPORT int JNICALL
-Java_io_agora_extension_ExtensionManager_nativeSetParameters(
-                JNIEnv* env,
-                jclass clazz, jstring parameters) {
-    CHECK_EXTENSION_PROVIDER_INT;
-    PRINTF_INFO("setParameters");
-    const char* charParameter = env->GetStringUTFChars(parameters, NULL);
-    std::string stringParameter(charParameter);
-    extensionProvider->setParameters(charParameter);
-    env->ReleaseStringUTFChars(parameters, charParameter);
-    return 0;
+    const char *vendor = env->GetStringUTFChars(jVendor, nullptr);
+    ExtensionProvider* provider = agora::extension::ExtensionProvider::getInstance();
+    provider->setExtensionVendor(vendor);
+    env->ReleaseStringUTFChars(jVendor, vendor);
+    return reinterpret_cast<intptr_t>(provider);
 }

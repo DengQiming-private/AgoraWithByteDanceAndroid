@@ -33,6 +33,8 @@ namespace agora {
 
             int setParameters(std::string parameter);
 
+            std::string getParameters(std::string parameter);
+
             std::thread::id getThreadId();
 
             int setExtensionControl(agora::rtc::IExtensionControl* control){
@@ -90,20 +92,7 @@ namespace agora {
             std::string lightDetectModelPath_;
             bef_effect_handle_t lightDetectHandler_ = nullptr;
 
-            agora::media::base::VideoFrame prevFrame_ = {
-                media::base::VIDEO_PIXEL_I420,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    nullptr,
-                    nullptr,
-                    nullptr,
-                    0,
-                    0,
-                    0
-            };
+            agora::media::base::VideoFrame prevFrame_;
             unsigned char* yuvBuffer_ = nullptr;
             unsigned char* rgbaBuffer_ = nullptr;
 

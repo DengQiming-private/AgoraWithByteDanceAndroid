@@ -40,26 +40,13 @@ struct TConnectionInfo {
    */
   util::AString localUserId;
 
-  TConnectionInfo() : id(-1), channelId(nullptr), state(CONNECTION_STATE_DISCONNECTED), localUserId(nullptr) {}
+  TConnectionInfo() : id(-1), channelId(NULL), state(CONNECTION_STATE_DISCONNECTED), localUserId(NULL) {}
 };
 
 /**
  * The audio subscription options.
  */
 struct AudioSubscriptionOptions {
-  AudioSubscriptionOptions() :
-    packetOnly(false),
-    bytesPerSample(0),
-    numberOfChannels(0),
-    sampleRateHz(0) {
-  }
-
-  AudioSubscriptionOptions(const AudioSubscriptionOptions &rhs) :
-      packetOnly(rhs.packetOnly),
-      bytesPerSample(rhs.bytesPerSample),
-      numberOfChannels(rhs.numberOfChannels),
-      sampleRateHz(rhs.sampleRateHz) {
-  }
   /**
    * Whether to only subscribe to audio packets in RTP format.
    * - `true`: Only subscribe to audio packets in RTP format, which means that the SDK does not decode the remote audio stream. You can use this mode to receive audio packets and handle them in your app.
@@ -71,7 +58,7 @@ struct AudioSubscriptionOptions {
   /**
    * The number of bytes that you expect for each audio sample.
    */
-  size_t bytesPerSample;
+  BYTES_PER_SAMPLE bytesPerSample;
   /**
    * The number of audio channels that you expect.
    */
@@ -80,6 +67,32 @@ struct AudioSubscriptionOptions {
    * The audio sample rate (Hz) that you expect.
    */
   uint32_t sampleRateHz;
+
+  AudioSubscriptionOptions() :
+    packetOnly(false),
+    bytesPerSample(TWO_BYTES_PER_SAMPLE),
+    numberOfChannels(0),
+    sampleRateHz(0) {
+  }
+
+  AudioSubscriptionOptions(const AudioSubscriptionOptions &rhs) :
+      packetOnly(rhs.packetOnly),
+      bytesPerSample(rhs.bytesPerSample),
+      numberOfChannels(rhs.numberOfChannels),
+      sampleRateHz(rhs.sampleRateHz) {
+  }
+
+  AudioSubscriptionOptions& operator=(const AudioSubscriptionOptions &rhs) {
+    if (this == &rhs) {
+      return *this;
+    }
+    
+    packetOnly = rhs.packetOnly;
+    bytesPerSample = rhs.bytesPerSample;
+    numberOfChannels = rhs.numberOfChannels;
+    sampleRateHz = rhs.sampleRateHz;
+    return *this;
+  }
 };
 
 enum RECV_TYPE : uint8_t {
@@ -173,7 +186,7 @@ struct RtcConnectionConfiguration {
  */
 class IRtcConnection : public RefCountInterface {
  protected:
-  ~IRtcConnection() = default;
+  ~IRtcConnection() {}
 
  public:
   /**
@@ -417,6 +430,27 @@ class IRtcConnection : public RefCountInterface {
    */
   virtual int sendStreamMessage(int streamId, const char* data, size_t length) = 0;
 
+  /** Enables/Disables the built-in encryption.
+   *
+   * In scenarios requiring high security, Agora recommends calling this method to enable the built-in encryption before joining a channel.
+   *
+   * All users in the same channel must use the same encryption mode and encryption key. Once all users leave the channel, the encryption key of this channel is automatically cleared.
+   *
+   * @note
+   * - If you enable the built-in encryption, you cannot use the RTMP streaming function.
+   * - Agora only supports `SM4_128_ECB` encryption mode for now.
+   *
+   * @param enabled Whether to enable the built-in encryption:
+   * - true: Enable the built-in encryption.
+   * - false: Disable the built-in encryption.
+   * @param config Configurations of built-in encryption schemas. See EncryptionConfig.
+   *
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int enableEncryption(bool enabled, const EncryptionConfig& config) = 0;
+
   /**
    * Report custom event to argus.
    *
@@ -438,7 +472,7 @@ class IRtcConnection : public RefCountInterface {
  */
 class IRtcConnectionObserver {
  public:
-  virtual ~IRtcConnectionObserver() = default;
+  virtual ~IRtcConnectionObserver() {}
 
   /**
    * Occurs when the connection state between the SDK and the Agora channel changes to `CONNECTION_STATE_CONNECTED(3)`.
@@ -590,6 +624,14 @@ class IRtcConnectionObserver {
     (void)rxQuality;
   }
 
+  /** Occurs when the network type is changed.
+
+  @param type See #NETWORK_TYPE.
+   */
+  virtual void onNetworkTypeChanged(NETWORK_TYPE type) {
+    (void)type;
+  }
+
   /**
    * Occurs when an API method is executed.
    *
@@ -644,7 +686,12 @@ class IRtcConnectionObserver {
    * @param length The length of the sent data.
    */
   virtual void onStreamMessage(user_id_t userId, int streamId, const char* data,
-                               size_t length) {}
+                               size_t length) {
+    (void)userId;
+    (void)streamId;
+    (void)data;
+    (void)length;
+  }
 
   /**
    * Reports the error that occurs when receiving data stream messages.
@@ -656,15 +703,31 @@ class IRtcConnectionObserver {
    * @param cached
    */
   virtual void onStreamMessageError(user_id_t userId, int streamId, int code, int missed,
-                                    int cached) {}
+                                    int cached) {
+    (void)userId;
+    (void)streamId;
+    (void)code;
+    (void)missed;
+    (void)cached;
+  }
+
+  /**
+    * Reports the error type of encryption.
+    * @param type See #ENCRYPTION_ERROR_TYPE.
+    */
+  virtual void onEncryptionError(ENCRYPTION_ERROR_TYPE errorType) {
+    (void)errorType;
+  }
 };
 
 class INetworkObserver {
  public:
-  virtual ~INetworkObserver() = default;
+  virtual ~INetworkObserver() {}
 
  public:
-  virtual void onBandwidthEstimationUpdated(const NetworkInfo& info) {};
+  virtual void onBandwidthEstimationUpdated(const NetworkInfo& info) {
+    (void)info;
+  };
 };
 
 }  // namespace rtc

@@ -7,6 +7,8 @@
 
 #pragma once  // NOLINT(build/header_guard)
 
+#include <cstring>
+
 #include "AgoraBase.h"
 #include "IAgoraService.h"
 #include "NGIAgoraAudioTrack.h"
@@ -41,83 +43,78 @@ class ILocalUser {
    * Options of subscribing to video streams.
    */
   struct VideoSubscriptionOptions {
-    VideoSubscriptionOptions() : type(rtc::REMOTE_VIDEO_STREAM_HIGH), encodedFrameOnly(false) {}
     /**
      * The type of the video stream to subscribe to.
      *
-     * The default value is `REMOTE_VIDEO_STREAM_HIGH`, which means the high-quality
+     * The default value is `VIDEO_STREAM_HIGH`, which means the high-quality
      * video stream.
      */
-    REMOTE_VIDEO_STREAM_TYPE type;
+    VIDEO_STREAM_TYPE type;
     /**
      * Whether to subscribe to encoded video data only:
      * - `true`: Subscribe to encoded video data only.
      * - `false`: (Default) Do not subscribe to encoded video data only.
      */
     bool encodedFrameOnly;
+
+    VideoSubscriptionOptions() : type(VIDEO_STREAM_HIGH),
+                                 encodedFrameOnly(false) {}
   };
 
   /**
    * Statistics related to audio network adaptation (ANA).
    */
   struct ANAStats {
-    ANAStats() = default;
-    ANAStats(const ANAStats&) = default;
-    ~ANAStats() = default;
     /**
      * The number of actions taken by the ANA bitrate controller since the start of the call.
      *
      * If you do not set this parameter, the ANA bitrate controller is disabled.
      */
-    agora::base::Optional<uint32_t> bitrate_action_counter;
+    agora::Optional<uint32_t> bitrate_action_counter;
     /**
      * The number of actions taken by the ANA channel controller since the start of the call.
      *
      * If you do not set this parameter, the ANA channel controller is disabled.
      */
-    agora::base::Optional<uint32_t> channel_action_counter;
+    agora::Optional<uint32_t> channel_action_counter;
     /**
      * The number of actions taken by the ANA DTX controller since the start of the call.
      *
      * If you do not set this parameter, the ANA DTX controller is disabled.
      */
-    agora::base::Optional<uint32_t> dtx_action_counter;
+    agora::Optional<uint32_t> dtx_action_counter;
     /**
      * The number of actions taken by the ANA FEC (Forward Error Correction) controller since the start of the call.
      *
      * If you do not set this parameter, the ANA FEC controller is disabled.
      */
-    agora::base::Optional<uint32_t> fec_action_counter;
+    agora::Optional<uint32_t> fec_action_counter;
     /**
      * The number of times that the ANA frame length controller increases the frame length
      * since the start of the call.
      *
      * If you do not set this parameter, the ANA frame length controller is disabled.
      */
-    agora::base::Optional<uint32_t> frame_length_increase_counter;
+    agora::Optional<uint32_t> frame_length_increase_counter;
     /**
      * The number of times that the ANA frame length controller decreases the frame length
      * since the start of the call.
      *
      * If you so not set this parameter, the ANA frame length controller is disabled.
      */
-    agora::base::Optional<uint32_t> frame_length_decrease_counter;
+    agora::Optional<uint32_t> frame_length_decrease_counter;
     /**
      * The uplink packet loss fractions set by the ANA FEC controller.
      *
      * If you do not set this parameter, the ANA FEC controller is not active.
      */
-    agora::base::Optional<float> uplink_packet_loss_fraction;
+    agora::Optional<float> uplink_packet_loss_fraction;
   };
 
   /**
    * Statistics related to audio processing.
    */
   struct AudioProcessingStats {
-    AudioProcessingStats() = default;
-    AudioProcessingStats(const AudioProcessingStats& other) = default;
-    ~AudioProcessingStats() = default;
-
     /**
      * The echo return loss (ERL).
      *
@@ -126,7 +123,7 @@ class ILocalUser {
      * ERL measures the signal loss that comes back as an echo. A higher ratio corresponds to a smaller
      * amount of echo. The higher the ERL the better.
      */
-    agora::base::Optional<double> echo_return_loss;
+    agora::Optional<double> echo_return_loss;
     //
     /**
      * The echo return loss enhancement (ERLE).
@@ -138,12 +135,12 @@ class ILocalUser {
      *
      * The total signal loss of the echo is the sum of ERL and ERLE.
      */
-    agora::base::Optional<double> echo_return_loss_enhancement;
+    agora::Optional<double> echo_return_loss_enhancement;
     /**
      * The fraction of time that the AEC (Acoustic Echo Cancelling) linear filter is divergent, in a
      * 1-second non-overlapped aggregation window.
      */
-    agora::base::Optional<double> divergent_filter_fraction;
+    agora::Optional<double> divergent_filter_fraction;
 
     /**
      * The delay metrics (ms).
@@ -157,55 +154,52 @@ class ILocalUser {
      * `getStatistics` during a session, the first call from any of them will change to one second
      * aggregation window for all.
      */
-    agora::base::Optional<int32_t> delay_median_ms;
+    agora::Optional<int32_t> delay_median_ms;
     /**
      * The delay standard deviation(ms).
      */
-    agora::base::Optional<int32_t> delay_standard_deviation_ms;
+    agora::Optional<int32_t> delay_standard_deviation_ms;
 
     /**
      * The residual echo detector likelihood.
      */
-    agora::base::Optional<double> residual_echo_likelihood;
+    agora::Optional<double> residual_echo_likelihood;
     /**
      * The maximum residual echo likelihood from the last time period.
      */
-    agora::base::Optional<double> residual_echo_likelihood_recent_max;
+    agora::Optional<double> residual_echo_likelihood_recent_max;
 
     /**
      * The instantaneous delay estimate produced in the AEC (ms).
      * The value is the instantaneous value at the time of calling \ref agora::rtc::IRemoteAudioTrack::getStatistics "getStatistics".
      */
-    agora::base::Optional<int32_t> delay_ms;
+    agora::Optional<int32_t> delay_ms;
   };
 
   /**
    * The detailed statistics of the local audio.
    */
   struct LocalAudioDetailedStats {
-    LocalAudioDetailedStats() = default;
-    ~LocalAudioDetailedStats() = default;
-
     /**
      * The synchronization source of the local audio.
      */
-    uint32_t local_ssrc = 0;
+    uint32_t local_ssrc;
     /**
      * The number of audio bytes sent.
      */
-    int64_t bytes_sent = 0;
+    int64_t bytes_sent;
     /**
      * The number of audio packets sent.
      */
-    int32_t packets_sent = 0;
+    int32_t packets_sent;
     /**
      * The number of audio packets lost.
      */
-    int32_t packets_lost = -1;
+    int32_t packets_lost;
     /**
      * The lost fraction.
      */
-    float fraction_lost = -1.0f;
+    float fraction_lost;
     /**
      * The codec name.
      */
@@ -213,40 +207,46 @@ class ILocalUser {
     /**
      * The type of the codec payload.
      */
-    agora::base::Optional<int> codec_payload_type;
+    agora::Optional<int> codec_payload_type;
     /**
      * The ext sequence number.
      */
-    int32_t ext_seqnum = -1;
+    int32_t ext_seqnum;
     /**
      * The jitter duration (ms).
      */
-    int32_t jitter_ms = -1;
+    int32_t jitter_ms;
     /**
      * The RTT (Round-Trip Time) duration (ms).
      */
-    int64_t rtt_ms = -1;
+    int64_t rtt_ms;
     /**
      * The audio level.
      */
-    int32_t audio_level = -1;
+    int32_t audio_level;
     /**
      * The total input energy.
      */
-    double total_input_energy = 0.0;
+    double total_input_energy;
     /**
      * The total input duration.
      */
-    double total_input_duration = 0.0;
+    double total_input_duration;
     /**
      * Whether the typing noise is detected.
      * - `true`: The typing noise is detected.
      * - `false`: The typing noise is not detected.
      */
-    bool typing_noise_detected = false;
+    bool typing_noise_detected;
 
     ANAStats ana_statistics;
     AudioProcessingStats apm_statistics;
+
+    LocalAudioDetailedStats() : local_ssrc(0), bytes_sent(0), packets_sent(0), packets_lost(-1), fraction_lost(-1.0f),
+                                ext_seqnum(-1), jitter_ms(-1), rtt_ms(-1), audio_level(-1),
+                                total_input_energy(0.0), total_input_duration(0.0), typing_noise_detected(false) {
+      memset(codec_name, 0, sizeof(codec_name));
+    }
   };
 
  public:
@@ -407,6 +407,36 @@ class ILocalUser {
    * - < 0: Failure.
    */
   virtual int getPlaybackSignalVolume(int* volume) = 0;
+
+  /*
+   * Adjust the playback volume of the user specified by uid.
+   *
+   * You can call this method to adjust the playback volume of the user specified by uid
+   * in call. If you want to adjust playback volume of the multi user, you can call this
+   * this method multi times.
+   *
+   * @note
+   * Please call this method after join channel.
+   * This method adjust the playback volume of specified user.
+   *
+   * @param uid Remote user ID。
+   * @param volume The playback volume, range is [0,100]:
+   * 0: mute, 100: The original volume
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int adjustUserPlaybackSignalVolume(uid_t uid, int volume) = 0;
+
+  /**
+   * Gets the current playback signal volume of specified user.
+   * @param uid Remote user ID。
+   * @param volume A pointer to the playback signal volume.
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int getUserPlaybackSignalVolume(uid_t uid, int* volume) = 0;
 
   /**
    * Pulls mixed PCM audio data from the channel.
@@ -655,7 +685,7 @@ class ILocalUser {
  */
 class ILocalUserObserver {
  public:
-  virtual ~ILocalUserObserver() = default;
+  virtual ~ILocalUserObserver() {}
 
   /**
    * Occurs when the first packet of the local audio track is sent, indicating that the local audio track
@@ -728,7 +758,7 @@ class ILocalUserObserver {
    * is successfully published.
    * @param videoTrack The pointer to `ILocalVideoTrack`.
    */
-  virtual void onVideoTrackPublishSuccess(agora_refptr<ILocalVideoTrack> videoTrack, int elapsed) = 0;
+  virtual void onVideoTrackPublishSuccess(agora_refptr<ILocalVideoTrack> videoTrack) = 0;
 
   /**
    * Occurs when the local video track fails to be published.

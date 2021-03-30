@@ -21,7 +21,7 @@ class IMediaPlayerSourceObserver;
  */
 class IMediaPlayerSource : public RefCountInterface {
 protected:
-  virtual ~IMediaPlayerSource() = default;
+ virtual ~IMediaPlayerSource() {}
 
 public:
 
@@ -207,7 +207,7 @@ public:
 
 class IMediaPlayerSourceObserver {
  public:
-  virtual ~IMediaPlayerSourceObserver() = default;
+  virtual ~IMediaPlayerSourceObserver() {}
 
   /**
    * @brief Triggered when the player state changes

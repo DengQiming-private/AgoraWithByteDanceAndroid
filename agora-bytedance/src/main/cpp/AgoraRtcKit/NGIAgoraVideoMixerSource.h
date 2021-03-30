@@ -16,12 +16,23 @@ namespace rtc {
 class IVideoTrack;
 
 struct MixerLayoutConfig {
-  uint32_t top;
-  uint32_t left;
-  uint32_t width;
-  uint32_t height;
-  int32_t zOrder;
+  int32_t x;
+  int32_t y;
+  int32_t width;
+  int32_t height;
+  int32_t zOrder; // larger zOrder prioritizes smaller ones
   float alpha;
+  bool mirror;
+  const char* image_path; // url of the place holder picture
+
+  MixerLayoutConfig() : x(0), y(0), width(0), height(0), zOrder(0), alpha(1.0), mirror(false), image_path(NULL) {}
+  MixerLayoutConfig(int ox, int oy, int w, int h, int order) : x(ox), y(oy), width(w), height(h), zOrder(order), alpha(1.0), mirror(false), image_path(NULL) {}
+};
+
+enum ImageType {
+  kPng,
+  kJpeg,
+  kGif
 };
 
 /**
@@ -34,59 +45,106 @@ class IVideoMixerSource : public RefCountInterface {
 public:
   /**
    * Add a video track for mixing.
+   * @param id The unique id of the stream.
    * @param track The instance of the video track that you want mixer to receive its video stream.
+   * @return
+   * 0 - Success
+   * <0 - Failure
    */
-  virtual void addVideoTrack(agora_refptr<IVideoTrack> track) = 0;
+  virtual int addVideoTrack(const char* id, agora_refptr<IVideoTrack> track) = 0;
   /**
    * Remove the video track.
+   * @param id The unique id of the stream.
    * @param track The instance of the video track that you want to remove from the mixer.
+   * @return
+   * 0 - Success
+   * <0 - Failure
    */
-  virtual void removeVideoTrack(agora_refptr<IVideoTrack> track) = 0;
+  virtual int removeVideoTrack(const char* id, agora_refptr<IVideoTrack> track) = 0;
   /**
    * Configure the layout of video frames comming from a specific track (indicated by uid)
    * on the mixer canvas.
-   * @param uid The instance of the video track that you want to remove from the mixer.
+   * @param id The unique id of the stream.
    * @param config The layout configuration
+   * @return
+   * 0 - Success
+   * <0 - Failure
    */
-  virtual void setStreamLayout(user_id_t uid, const MixerLayoutConfig& config) = 0;
-  /**
-   * Add a image source to the mixer with its layout configuration on the mixer canvas.
-   * @param url The URL of the image source.
-   * @param config The layout configuration
-   */
-  virtual void setImageSource(const char* url, const MixerLayoutConfig& config) = 0;
+  virtual int setStreamLayout(const char* id, const MixerLayoutConfig& config) = 0;
   /**
    * Remove the user layout on the mixer canvas
-   * 
+   * @param id The unique id of the stream.
    * @param uid The uid of the stream.
+   * @return
+   * 0 - Success
+   * <0 - Failure
    */
-  virtual void delStreamLayout(user_id_t uid) = 0;
+  virtual int delStreamLayout(const char* id) = 0;
+  /**
+   * Add a image source to the mixer with its layout configuration on the mixer canvas.
+   * @param id The unique id of the image.
+   * @param config The layout configuration
+   * @return
+   * 0 - Success
+   * <0 - Failure
+   */
+  virtual int addImageSource(const char* id, const MixerLayoutConfig& config, ImageType type = kPng) = 0;
+  /**
+   * Delete a image source to the mixer.
+   * @param id The unique id of the image.
+   * @return
+   * 0 - Success
+   * <0 - Failure
+   */
+  virtual int delImageSource(const char* id) = 0;
+  /**
+   * Clear all the layout settings set previously
+   */
+  virtual void clearLayout() = 0;
   /**
    * Refresh the user layout on the mixer canvas
-   * @param uid The uid of the stream.
+   * @return
+   * 0 - Success
+   * <0 - Failure
    */
-  virtual void refresh(user_id_t uid) = 0;
+  virtual int refresh() = 0;
   /**
    * Set the mixer canvas background to override the default configuration
    * @param width width of the canvas
    * @param height height of the canvas
    * @param fps fps of the mixed video stream
    * @param color_argb mixer canvas background color in argb
+   * @return
+   * 0 - Success
+   * <0 - Failure
    */
-  virtual void setBackground(uint32_t width, uint32_t height, int fps, uint32_t color_argb) = 0;
+  virtual int setBackground(uint32_t width, uint32_t height, int fps, uint32_t color_argb = 0) = 0;
   /**
    * Set the mixer canvas background to override the default configuration
    * @param width width of the canvas
    * @param height height of the canvas
    * @param fps fps of the mixed video stream
    * @param url URL of the canvas background image
+   * @return
+   * 0 - Success
+   * <0 - Failure
    */
-  virtual void setBackground(uint32_t width, uint32_t height, int fps, const char* url) = 0;
+  virtual int setBackground(uint32_t width, uint32_t height, int fps, const char* url) = 0;
   /**
    * Set the rotation of the mixed video stream
    * @param rotation:0:none, 1:90°, 2:180°, 3:270° 
+   * @return
+   * 0 - Success
+   * <0 - Failure
    */
-  virtual void setRotation(uint8_t rotation) = 0;
+  virtual int setRotation(uint8_t rotation) = 0;
+  /**
+   * Get the average delay in ms introduced by the mixer module, which includes the average
+   * mixing delay plus the encoder delay.
+   * @return
+   * delay in ms
+   */
+  virtual int getAvgMixerDelay() = 0;
 };
 
 } //namespace rtc

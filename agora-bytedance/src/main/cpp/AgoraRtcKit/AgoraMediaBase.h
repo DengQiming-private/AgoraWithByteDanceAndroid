@@ -5,6 +5,8 @@
 //  Copyright (c) 2017 Agora.io. All rights reserved.
 
 #pragma once  // NOLINT(build/header_guard)
+
+#include <cstring>
 #include <stdint.h>
 #include <limits>
 #include <stddef.h>
@@ -54,6 +56,16 @@ enum AudioRoute
   ROUTE_HEADSETBLUETOOTH
 };
 
+/**
+ * Bytes per sample
+ */
+enum BYTES_PER_SAMPLE {
+  /**
+   * two bytes per sample
+   */
+  TWO_BYTES_PER_SAMPLE = 2,
+};
+
 struct AudioParameters {
   int sample_rate;
   size_t channels;
@@ -87,6 +99,7 @@ struct PacketOptions {
   uint32_t timestamp;
   // Audio level indication.
   uint8_t audioLevelIndication;
+
   PacketOptions()
       : timestamp(0),
         audioLevelIndication(127) {}
@@ -109,7 +122,7 @@ struct AudioPcmFrame {
   size_t samples_per_channel_;
   int sample_rate_hz_;
   size_t num_channels_;
-  size_t bytes_per_sample;
+  rtc::BYTES_PER_SAMPLE bytes_per_sample;
   int16_t data_[kMaxDataSizeSamples];
 
   AudioPcmFrame() :
@@ -117,7 +130,9 @@ struct AudioPcmFrame {
     samples_per_channel_(0),
     sample_rate_hz_(0),
     num_channels_(0),
-    bytes_per_sample(0) {}
+    bytes_per_sample(rtc::TWO_BYTES_PER_SAMPLE) {
+    memset(data_, 0, sizeof(data_));
+  }
 };
 
 class IAudioFrameObserver {
@@ -143,9 +158,9 @@ enum VIDEO_PIXEL_FORMAT {
    */
   VIDEO_PIXEL_BGRA = 2,
   /**
-   * 3: I422.
+   * 3: NV21.
    */
-  VIDEO_PIXEL_I422 = 3,
+  VIDEO_PIXEL_NV21 = 3,
   /**
    * 4: RGBA.
    */
@@ -154,6 +169,18 @@ enum VIDEO_PIXEL_FORMAT {
    * 8: NV12.
    */
   VIDEO_PIXEL_NV12 = 8,
+  /** 
+   * 10: GL_TEXTURE_2D
+   */
+  VIDEO_TEXTURE_2D = 10,
+  /**
+   * 11: GL_TEXTURE_OES
+   */
+  VIDEO_TEXTURE_OES = 11,
+  /**
+   * 16: I422.
+   */
+  VIDEO_PIXEL_I422 = 16,
 };
 
 /**
@@ -182,6 +209,20 @@ enum RENDER_MODE_TYPE {
  * The definition of the ExternalVideoFrame struct.
  */
 struct ExternalVideoFrame {
+   /**
+   * The EGL context type.
+   */
+  enum EGL_CONTEXT_TYPE {
+    /**
+     * 0: When using the OpenGL interface (javax.microedition.khronos.egl.*) defined by Khronos
+     */
+    EGL_CONTEXT10 = 0,
+    /**
+     * 0: When using the OpenGL interface (android.opengl.*) defined by Android
+     */
+    EGL_CONTEXT14 = 1,
+  };
+
   /**
    * Video buffer types.
    */
@@ -190,6 +231,14 @@ struct ExternalVideoFrame {
      * 1: Raw data.
      */
     VIDEO_BUFFER_RAW_DATA = 1,
+    /**
+     * 2: The same as VIDEO_BUFFER_RAW_DATA.
+     */
+    VIDEO_BUFFER_ARRAY = 2,
+    /**
+     * 3: The video buffer in the format of texture.
+     */
+    VIDEO_BUFFER_TEXTURE = 3,
   };
 
   /**
@@ -243,6 +292,27 @@ struct ExternalVideoFrame {
    * unsynchronized audio and video.
    */
   long long timestamp;
+  /** 
+   * [Texture-related parameter]
+   * When using the OpenGL interface (javax.microedition.khronos.egl.*) defined by Khronos, set EGLContext to this field.
+   * When using the OpenGL interface (android.opengl.*) defined by Android, set EGLContext to this field.
+   */
+  void *eglContext;
+  /** 
+   * [Texture related parameter] Texture ID used by the video frame.
+   */
+  EGL_CONTEXT_TYPE eglType;
+  /** 
+   * [Texture related parameter] Incoming 4 &times; 4 transformational matrix. The typical value is a unit matrix.
+   */
+  int textureId;
+
+  ExternalVideoFrame() : type(VIDEO_BUFFER_RAW_DATA),
+                         format(VIDEO_PIXEL_I420),
+                         buffer(NULL), stride(0), height(0),
+                         cropLeft(0), cropTop(0), cropRight(0), cropBottom(0),
+                         rotation(0), timestamp(0), eglContext(NULL), eglType(EGL_CONTEXT10),
+                         textureId(0) {}
 };
 
 /**
@@ -300,12 +370,19 @@ struct VideoFrame {
    * The type of audio-video synchronization.
    */
   int avsync_type;
+
+  VideoFrame() : type(VIDEO_PIXEL_UNKNOWN),
+                 width(0), height(0),
+                 yStride(0), uStride(0), vStride(0),
+                 yBuffer(NULL), uBuffer(NULL), vBuffer(NULL),
+                 rotation(0), renderTimeMs(0), avsync_type(0) {}
 };
 
 class IVideoFrameObserver {
  public:
   virtual void onFrame(const VideoFrame* frame) = 0;
   virtual ~IVideoFrameObserver() {}
+  virtual bool isExternal() { return true; }
 };
 
 enum MEDIA_PLAYER_SOURCE_TYPE {
@@ -356,9 +433,9 @@ class IAudioFrameObserver {
      */
     int samplesPerChannel;
     /**
-     * The number of bytes per sample: Two for 16-bit PCM.
+     * The number of bytes per sample: #BYTES_PER_SAMPLE
      */
-    int bytesPerSample;
+    agora::rtc::BYTES_PER_SAMPLE bytesPerSample;
     /**
      * The number of audio channels (data is interleaved, if stereo).
      */
@@ -380,10 +457,19 @@ class IAudioFrameObserver {
      */
     int64_t renderTimeMs;
     int avsync_type;
+
+    AudioFrame() : type(FRAME_TYPE_PCM16),
+                   samplesPerChannel(0),
+                   bytesPerSample(rtc::TWO_BYTES_PER_SAMPLE),
+                   channels(0),
+                   samplesPerSec(0),
+                   buffer(NULL),
+                   renderTimeMs(0),
+                   avsync_type(0) {}
   };
 
  public:
-  virtual ~IAudioFrameObserver() = default;
+  virtual ~IAudioFrameObserver() {}
 
   /**
    * Occurs when the recorded audio frame is received.
@@ -424,12 +510,18 @@ class IAudioFrameObserver {
  */
 class IVideoFrameObserver {
  public:
-  using VideoFrame = media::base::VideoFrame;
+  typedef media::base::VideoFrame VideoFrame;
+
   enum VIDEO_OBSERVER_POSITION {
     POSITION_POST_CAPTURER = 1 << 0,
     POSITION_PRE_RENDERER = 1 << 1,
     POSITION_PRE_ENCODER = 1 << 2,
     POSITION_POST_FILTERS = 1 << 3,
+  };
+
+  enum VIDEO_FRAME_PROCESS_MODE {
+    PROCESS_MODE_READ_ONLY, // Observer works as a pure renderer and will not modify the original frame.
+    PROCESS_MODE_READ_WRITE, // Observer works as a filter that will process the video frame and affect the following frame processing in SDK.
   };
 
  public:
@@ -451,6 +543,46 @@ class IVideoFrameObserver {
    * - false: Ignore, in which case this method does not sent the current video frame to the SDK.
   */
   virtual bool onCaptureVideoFrame(VideoFrame& videoFrame) = 0;
+  
+  virtual bool onSecondaryCameraCaptureVideoFrame(VideoFrame& videoFrame) = 0;
+
+  /**
+   * Occurs each time the SDK receives a video frame captured by the screen.
+   *
+   * After you successfully register the video frame observer, the SDK triggers this callback each time
+   * a video frame is received. In this callback, you can get the video data captured by the screen.
+   * You can then pre-process the data according to your scenarios.
+   *
+   * After pre-processing, you can send the processed video data back to the SDK by setting the
+   * `videoFrame` parameter in this callback.
+   *
+   * @param videoFrame A pointer to the video frame: VideoFrame
+   * @return Determines whether to ignore the current video frame if the pre-processing fails:
+   * - true: Do not ignore.
+   * - false: Ignore, in which case this method does not sent the current video frame to the SDK.
+   */
+  virtual bool onScreenCaptureVideoFrame(VideoFrame& videoFrame) = 0;
+
+  /**
+   * Occurs each time the SDK receives a video frame decoded by the MediaPlayer.
+   *
+   * After you successfully register the video frame observer, the SDK triggers this callback each
+   * time a video frame is decoded. In this callback, you can get the video data decoded by the
+   * MediaPlayer. You can then pre-process the data according to your scenarios.
+   *
+   * After pre-processing, you can send the processed video data back to the SDK by setting the
+   * `videoFrame` parameter in this callback.
+   *
+   * @param videoFrame A pointer to the video frame: VideoFrame
+   * @param mediaPlayerId of the mediaPlayer.
+   * @return Determines whether to ignore the current video frame if the pre-processing fails:
+   * - true: Do not ignore.
+   * - false: Ignore, in which case this method does not sent the current video frame to the SDK.
+   */
+  virtual bool onMediaPlayerVideoFrame(VideoFrame& videoFrame, int mediaPlayerId) = 0;
+
+  virtual bool onSecondaryScreenCaptureVideoFrame(VideoFrame& videoFrame) = 0;
+
   /**
    * Occurs each time the SDK receives a video frame sent by the remote user.
    *
@@ -471,10 +603,39 @@ class IVideoFrameObserver {
   virtual bool onRenderVideoFrame(rtc::uid_t uid, rtc::conn_id_t connectionId,
                                   VideoFrame& videoFrame) = 0;
 
-  virtual base::VIDEO_PIXEL_FORMAT getVideoPixelFormatPreference() {
-      return base::VIDEO_PIXEL_I420; }
-  virtual bool getRotationApplied() { return false; }
+  virtual bool onTranscodedVideoFrame(VideoFrame& videoFrame) = 0;
+
+  /**
+   * Indicate the video frame mode of the observer.
+   * @return VIDEO_FRAME_PROCESS_MODE
+   */
+  virtual VIDEO_FRAME_PROCESS_MODE getVideoFrameProcessMode() {
+    return PROCESS_MODE_READ_ONLY;
+  }
+
+  /*
+   * Occurs each time needs to get preference video frame type.
+   *
+   * @return preference video pixel format.
+   */
+  virtual base::VIDEO_PIXEL_FORMAT getVideoPixelFormatPreference() { return base::VIDEO_PIXEL_I420; }
+
+  /**
+   * Occurs each time needs to get rotation angle.
+   *
+   * @return rotation angle.
+   */
+  virtual int getRotationApplied() { return 0; }
+
+  /**
+   * Occurs each time needs to get whether mirror is applied or not.
+   *
+   * @return Determines whether to mirror.
+   * - true: need to mirror.
+   * - false: no mirror.
+   */
   virtual bool getMirrorApplied() { return false; }
+
   /**
    * Indicate if the observer is for internal use.
    * Note: Never override this function

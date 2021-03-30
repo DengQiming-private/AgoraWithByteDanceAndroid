@@ -4,9 +4,10 @@
 //
 
 #pragma once  // NOLINT(build/header_guard)
-
+#include "IAgoraLog.h"
 #include "AgoraBase.h"
 #include "AgoraOptional.h"
+#include "NGIAgoraExtensionProvider.h"
 
 namespace agora {
 namespace rtc {
@@ -27,12 +28,14 @@ class IVideoFrameSender;
 class IVideoEncodedImageSender;
 class IVideoSourceNode;
 class IVideoMixerSource;
+class IVideoFrameTransceiver;
 class ILocalVideoTrack;
 class IMediaNodeFactory;
 class IRecordingDeviceSource;
+class IRemoteAudioMixerSource;
 class IRtmpStreamingService;
 class IMediaPacketSender;
-class IExtensionControl;
+class IMediaRelayService;
 
 class IRtcEngine;
 /**
@@ -42,12 +45,14 @@ struct AudioEncoderConfiguration {
   /**
    * The audio profile: #AUDIO_PROFILE_TYPE
    */
-  AUDIO_PROFILE_TYPE audioProfile = AUDIO_PROFILE_DEFAULT;
+  AUDIO_PROFILE_TYPE audioProfile;
   // absl::optional<DtxStatus> dtx;
   // double bitrate_priority = 1.0;
   // absl::optional<int> ptime;
   // FEC parameters
   // Rtx parameters
+
+  AudioEncoderConfiguration() : audioProfile(AUDIO_PROFILE_DEFAULT) {}
 };
 
 }  // namespace rtc
@@ -62,6 +67,7 @@ class IRtmService;
 
 namespace base {
 class IEngineBase;
+class IServiceObserver;
 
 /**
  * The global configurations for \ref agora::base::IAgoraService "AgoraService".
@@ -76,7 +82,7 @@ struct AgoraServiceConfiguration {
    * - `false`: Disable the audio processing module. Set this member as `false` if you
    * do not need audio.
    */
-  bool enableAudioProcessor = true;
+  bool enableAudioProcessor;
   /**
    * Whether to enable the audio device module.
    * - `true`: (Default) Enable the audio device module. Once enabled, the underlying
@@ -89,7 +95,7 @@ struct AgoraServiceConfiguration {
    * If you set `enableAudioDevice` as `false` and set `enableAudioProcessor` as `true`,
    * you can still pull PCM audio data.
    */
-  bool enableAudioDevice = true;
+  bool enableAudioDevice;
   /**
    * Whether to enable video.
    * - `true`: Enable video. Once enabled, the underlying video engine is
@@ -97,19 +103,41 @@ struct AgoraServiceConfiguration {
    * - `false`: (Default) Disable video. Set this parameter as `false` if you
    * do not need video.
    */
-  bool enableVideo = false;
+  bool enableVideo;
   /**
    * The user context. For example, the activity context in Android.
    */
-  void* context = nullptr;
+  void* context;
   /**
    * The App ID of your project.
    */
-  const char* appId = nullptr;
+  const char* appId;
+  
+  /** The channel profile. For details, see \ref agora::CHANNEL_PROFILE_TYPE "CHANNEL_PROFILE_TYPE". The default channel profile is `CHANNEL_PROFILE_LIVE_BROADCASTING`.
+   */
+  agora::CHANNEL_PROFILE_TYPE channelProfile;
   /**
    * The audio scenario. See \ref agora::rtc::AUDIO_SCENARIO_TYPE "AUDIO_SCENARIO_TYPE". The default value is `AUDIO_SCENARIO_DEFAULT`.
    */
-  rtc::AUDIO_SCENARIO_TYPE audioScenario = rtc::AUDIO_SCENARIO_DEFAULT;
+  rtc::AUDIO_SCENARIO_TYPE audioScenario;
+  /**
+   * The config for custumer set log path, log size and log level.
+   */
+  commons::LogConfig logConfig;
+  /**
+   * The service observer.
+   */
+  IServiceObserver* serviceObserver;
+
+  AgoraServiceConfiguration() : enableAudioProcessor(true),
+                                enableAudioDevice(true),
+                                enableVideo(false),
+                                context(NULL),
+                                appId(NULL),
+                                channelProfile(agora::CHANNEL_PROFILE_LIVE_BROADCASTING),
+                                audioScenario(rtc::AUDIO_SCENARIO_DEFAULT),
+                                logConfig(),
+                                serviceObserver(NULL) {}
 };
 /**
  * The global audio session configurations.
@@ -235,6 +263,7 @@ struct AudioSessionConfiguration {
            inputNumberOfChannels == o.inputNumberOfChannels &&
            outputNumberOfChannels == o.outputNumberOfChannels;
   }
+
   bool operator!=(const AudioSessionConfiguration& o) const { return !(*this == o); }
 
  private:
@@ -347,6 +376,26 @@ struct SenderOptions {
   : ccMode(CC_ENABLED),
     codecType(rtc::VIDEO_CODEC_H264),
     targetBitrate(6500) {}
+};
+
+
+/**
+ * The IServiceObserver class.
+ */
+class IServiceObserver {
+public:
+  virtual ~IServiceObserver() {}
+  
+  /**
+    * Reports the permission error.
+    * @param permission {@link PERMISSION}
+    */
+  virtual void onPermissionError(agora::rtc::PERMISSION_TYPE permissionType) = 0;
+  /**
+   * Reports the audio device error.
+   * @param error {@link ERROR_CODE_TYPE}
+   */
+  virtual void onAudioDeviceError(ERROR_CODE_TYPE error, const char* description) = 0;
 };
 
 /**
@@ -488,6 +537,20 @@ class IAgoraService {
       agora_refptr<rtc::IAudioPcmDataSender> audioSource) = 0;
 
   /**
+   * Creates a local audio track object with a audio mixer source and returns the pointer.
+   *
+   * Once created, this track can be used to send PCM audio data.
+   *
+   * @param audioSource The pointer to the audio mixer source : \ref agora::rtc::IRemoteAudioMixerSource "IRemoteAudioMixerSource".
+   * @return
+   * - The pointer to \ref rtc::ILocalAudioTrack "ILocalAudioTrack", if the method call succeeds.
+   * - A null pointer, if the method call fails.
+   * - `INVALID_STATE`, if `enableAudioProcessor` in `AgoraServiceConfiguration` is set as `false`.
+   */
+  virtual agora_refptr<rtc::ILocalAudioTrack> createCustomAudioTrack(
+      agora_refptr<rtc::IRemoteAudioMixerSource> audioSource) = 0;
+
+  /**
    * Creates a local audio track object with an encoded audio frame sender and returns the pointer.
    *
    * Once created, this track can be used to send encoded audio frames, such as Opus frames.
@@ -602,6 +665,19 @@ class IAgoraService {
    */
   virtual agora_refptr<rtc::ILocalVideoTrack> createMixedVideoTrack(agora_refptr<rtc::IVideoMixerSource> videoSource) = 0;
 
+  /**
+   * Creates a local video track object with a video frame transceiver and returns the pointer.
+   *
+   * Once created, this track can be used to send video data processed by the transceiver.
+   *
+   * @param transceiver The pointer to the video transceiver: IVideoFrameTransceiver.
+   *
+   * @return
+   * - The pointer to \ref rtc::ILocalVideoTrack "ILocalVideoTrack", if the method call succeeds.
+   * - A null pointer, if the method call fails.
+   */
+  virtual agora_refptr<rtc::ILocalVideoTrack> createTranscodedVideoTrack(agora_refptr<rtc::IVideoFrameTransceiver> transceiver) = 0;
+
 /// @cond (!RTSA)
   /**
    * Creates a local video track object with a customized video source and returns the pointer.
@@ -676,6 +752,19 @@ class IAgoraService {
       agora_refptr<rtc::IRtcConnection> rtcConnection, const char* appId) = 0;
 
   /**
+   * Creates an Media Relay service object and returns the pointer.
+   *
+   * @param rtcConnection The pointer to \ref rtc::IRtcConnection "IRtcConnection".
+   * @param appId The App ID of the media relay service.
+   * @return
+   * - The pointer to \ref rtc::IMediaRelayService "IMediaRelayService", if the method call
+   * succeeds.
+   * - A null pointer, if the method call fails.
+   */
+  virtual agora_refptr<rtc::IMediaRelayService> createMediaRelayService(
+      agora_refptr<rtc::IRtcConnection> rtcConnection, const char* appId) = 0;
+
+  /**
    * Creates an RTM servive object and returns the pointer.
    *
    * @return
@@ -684,12 +773,14 @@ class IAgoraService {
    */
   virtual rtm::IRtmService* createRtmService() = 0;
 
-  /**
-   * @return
-   * - The pointer to \ref agora::rtc::IExtensionControl "IExtensionControl", if the method call succeeds.
-   * - A null pointer, if the method call fails.
-   */
-  virtual rtc::IExtensionControl* getExtensionControl() = 0;
+  virtual int addExtensionObserver(agora::agora_refptr<agora::rtc::IMediaExtensionObserver> observer) = 0;
+
+  virtual int removeExtensionObserver(agora::agora_refptr<agora::rtc::IMediaExtensionObserver> observer) = 0;
+
+  virtual int addExtensionProvider(const char* id,
+    agora_refptr<rtc::IExtensionProvider> provider) = 0;
+
+  virtual int removeExtensionProvider(const char* id) = 0;
 
  protected:
   virtual ~IAgoraService() {}

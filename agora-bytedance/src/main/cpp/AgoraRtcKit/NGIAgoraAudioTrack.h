@@ -21,9 +21,11 @@ class IAudioTrackStateObserver;
  * This struct notifies the source of the properties of audio frames to be sent to a sink.
  */
 struct AudioSinkWants {
-  AudioSinkWants() = default;
-  AudioSinkWants(const AudioSinkWants&) = default;
-  ~AudioSinkWants() = default;
+
+    AudioSinkWants(int sampleRate, size_t chs) : samplesPerSec(sampleRate), channels(chs) {}
+    AudioSinkWants() : samplesPerSec(0), channels(0) {}
+    AudioSinkWants(const AudioSinkWants& o) : samplesPerSec(o.samplesPerSec), channels(o.channels) {};
+    ~AudioSinkWants() = default;
 
   /** The sample rate of the audio frame to be sent to the sink. */
   int samplesPerSec;
@@ -86,6 +88,22 @@ public:
   virtual bool removeAudioFilter(agora_refptr<IAudioFilter> filter, AudioFilterPosition position) = 0;
 
   /**
+   * set the properties of the specified video filter
+   * @param id id of the filter
+   * @param key key of the property
+   * @param json_value json str value of the property
+   * @return
+   * - 0: success
+   * - <0: failure
+   */
+  virtual int setFilterProperty(const char* id, const char* key, const char* json_value) {
+    (void)id;
+    (void)key;
+    (void)json_value;
+    return -1;
+  }
+
+  /**
    * Gets the audio filter by its name.
    *
    * @param name The name of the audio filter.
@@ -146,8 +164,15 @@ class ILocalAudioTrack : public IAudioTrack {
     uint32_t sent_audio_frames;
     uint32_t pushed_audio_frames;
     uint32_t dropped_audio_frames;
-    uint32_t effect_type;
     bool enabled;
+
+    LocalAudioTrackStats() : source_id(0),
+                             buffered_pcm_data_list_size(0),
+                             missed_audio_frames(0),
+                             sent_audio_frames(0),
+                             pushed_audio_frames(0),
+                             dropped_audio_frames(0),
+                             enabled(false) {}
   };
 
  public:
@@ -226,7 +251,7 @@ class ILocalAudioTrack : public IAudioTrack {
   virtual int enableEarMonitor(bool enable, bool includeAudioFilter) = 0;
 
  protected:
-  ~ILocalAudioTrack() = default;
+  ~ILocalAudioTrack() {}
 };
 
 /**
@@ -248,7 +273,7 @@ struct RemoteAudioTrackStats {
   /**
    * The delay (ms) from the receiver to the jitter buffer.
    */
-  int jitter_buffer_delay;
+  uint32_t jitter_buffer_delay;
   /**
    * The audio frame loss rate in the reported interval.
    */
@@ -283,6 +308,46 @@ struct RemoteAudioTrackStats {
    * The average packet waiting time in the jitter buffer (ms)
    */
   int mean_waiting_time;
+  /**
+   * The samples of expanded speech.
+   */
+  size_t expanded_speech_samples;
+  /**
+   * The samples of expanded noise.
+   */
+  size_t expanded_noise_samples;
+  /**
+   * The timestamps of since last report.
+   */
+  uint32_t timestamps_since_last_report;
+  /**
+   * The min sequence number.
+   */
+  uint16_t min_sequence_number;
+  /**
+   * The max sequence number.
+   */
+  uint16_t max_sequence_number;
+  /**
+   * The audio energy.
+   */
+  int32_t audio_level;
+  /**
+   *  The count of 80 ms frozen in 2 seconds
+   */
+  uint16_t frozen_count_80_ms;
+  /**
+   *  The time of 80 ms frozen in 2 seconds
+   */
+  uint16_t frozen_time_80_ms;
+  /**
+   *  The count of 200 ms frozen in 2 seconds
+   */
+  uint16_t frozen_count_200_ms;
+  /**
+   *  The time of 200 ms frozen in 2 seconds
+   */
+  uint16_t frozen_time_200_ms;
 
   RemoteAudioTrackStats() :
     uid(0),
@@ -296,7 +361,17 @@ struct RemoteAudioTrackStats {
     total_frozen_time(0),
     frozen_rate(0),
     received_bytes(0),
-    mean_waiting_time(0) {}
+    mean_waiting_time(0),
+    expanded_speech_samples(0),
+    expanded_noise_samples(0),
+    timestamps_since_last_report(0),
+    min_sequence_number(0xFFFF),
+    max_sequence_number(0),
+    frozen_count_80_ms(0),
+    frozen_time_80_ms(0),
+    frozen_count_200_ms(0),
+    frozen_time_200_ms(0),
+    audio_level(0) { }
 };
 
 /**

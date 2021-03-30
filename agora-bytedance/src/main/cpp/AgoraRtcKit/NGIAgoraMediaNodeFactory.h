@@ -12,6 +12,7 @@
 #include "NGIAgoraMediaNode.h"
 #include "IAgoraMediaPlayerSource.h"
 #include "NGIAgoraCameraCapturer.h"
+#include "NGIAgoraRemoteAudioMixerSource.h"
 #include "NGIAgoraScreenCapturer.h"
 #include "NGIAgoraVideoMixerSource.h"
 
@@ -49,6 +50,17 @@ class IMediaNodeFactory : public RefCountInterface {
    * - A null pointer, if the method call fails.
    */
   virtual agora_refptr<IAudioEncodedFrameSender> createAudioEncodedFrameSender() = 0;
+
+  /**
+   * Creates a remote audio mixer source object and returns the pointer.
+   *
+   * @param type The type of audio mixer source you want to create.
+   *
+   * @return
+   * - The pointer to \ref rtc::IRemoteAudioMixerSource "IRemoteAudioMixerSource", if the method call succeeds.
+   * - A null pointer, if the method call fails.
+   */
+  virtual agora_refptr<IRemoteAudioMixerSource> createRemoteAudioMixerSource() = 0;
 
   /**
    * Creates a camera capturer.
@@ -140,13 +152,12 @@ class IMediaNodeFactory : public RefCountInterface {
    * This method creates an `IAudioFilter` object, which can be used to filter the audio data from
    * inside extension.
    *
-   * @param name The pointer to the name of the extension.
-   * @param vendor The pointer to the extension vendor.
+   * @param id The pointer to the extension id.
    * @return
    * - The pointer to IAudioFilter, if the method call succeeds.
    * - A null pointer, if the method call fails.
    */
-  virtual agora_refptr<IAudioFilter> createAudioFilter(const char* name, const char* vendor = nullptr) = 0;
+  virtual agora_refptr<IAudioFilter> createAudioFilter(const char* id) = 0;
 
   /**
    * Creates a video filter for the extension.
@@ -154,12 +165,12 @@ class IMediaNodeFactory : public RefCountInterface {
    * This method creates an IVideoFilter object, which can be used to filter the video from inside
    * extension.
    *
-   * @param vendor The pointer to the name of the extension vendor.
+   * @param id The pointer to the extension id.
    * @return
    * - The pointer to IVideoFilter, if the method call succeeds.
    * - A null pointer, if the method call fails.
    */
-  virtual agora_refptr<IVideoFilter> createVideoFilter(const char* name, const char* vendor = nullptr) = 0;
+  virtual agora_refptr<IVideoFilter> createVideoFilter(const char* id) = 0;
 
   /**
    * Creates a video sink for the extension.
@@ -167,12 +178,12 @@ class IMediaNodeFactory : public RefCountInterface {
    * This method creates an IVideoSinkBase object, which can be used to receive the video from
    * inside extension.
    *
-   * @param vendor The pointer to the name of the extension vendor.
+   * @param id The pointer to the extension id.
    * @return
    * - The pointer to IVideoSinkBase, if the method call succeeds.
    * - A null pointer, if the method call fails.
    */
-  virtual agora_refptr<IVideoSinkBase> createVideoSink(const char* name, const char* vendor = nullptr) = 0;
+  virtual agora_refptr<IVideoSinkBase> createVideoSink(const char* id) = 0;
 
   /**
    * Creates a media player source object and returns the pointer.

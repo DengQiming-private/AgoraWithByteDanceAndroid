@@ -50,7 +50,7 @@ class JsonWrapper;
 }  // namespace cjson
 }  // namespace commons
 
-using any_document_t = commons::cjson::JsonWrapper;
+typedef commons::cjson::JsonWrapper any_document_t;
 
 namespace base {
 class IEngineBase;
@@ -72,16 +72,13 @@ class AutoPtr {
   typedef T* pointer_type;
 
  public:
-  explicit AutoPtr(pointer_type p = nullptr) : ptr_(p) {}
+  explicit AutoPtr(pointer_type p = 0) : ptr_(p) {}
 
   ~AutoPtr() {
-    if (ptr_) {
-      ptr_->release();
-      ptr_ = nullptr;
-    }
+    if (ptr_) ptr_->release();
   }
 
-  operator bool() const { return (ptr_ != nullptr); }
+  operator bool() const { return ptr_ != (pointer_type)0; }
 
   value_type& operator*() const { return *get(); }
 
@@ -90,27 +87,23 @@ class AutoPtr {
   pointer_type get() const { return ptr_; }
 
   pointer_type release() {
-    pointer_type ret = ptr_;
+    pointer_type tmp = ptr_;
     ptr_ = 0;
-    return ret;
+    return tmp;
   }
 
-  void reset(pointer_type ptr = nullptr) {
-    if (ptr != ptr_ && ptr_) {
-      ptr_->release();
-    }
-
+  void reset(pointer_type ptr = 0) {
+    if (ptr != ptr_ && ptr_) ptr_->release();
     ptr_ = ptr;
   }
 
   template <class C1, class C2>
   bool queryInterface(C1* c, C2 iid) {
-    pointer_type p = nullptr;
+    pointer_type p = NULL;
     if (c && !c->queryInterface(iid, reinterpret_cast<void**>(&p))) {
       reset(p);
     }
-
-    return (p != nullptr);
+    return p != NULL;
   }
 
  private:
@@ -133,7 +126,7 @@ class CopyableAutoPtr : public AutoPtr<T> {
     return *this;
   }
   pointer_type clone() const {
-    if (!this->get()) return nullptr;
+    if (!this->get()) return NULL;
     return this->get()->clone();
   }
 };
@@ -335,6 +328,14 @@ enum WARN_CODE_TYPE {
    * 131: The channel connection cannot be recovered.
    */
   WARN_CHANNEL_CONNECTION_UNRECOVERABLE = 131,
+  /**
+   * 132: The SDK connection IP has changed.
+   */
+  WARN_CHANNEL_CONNECTION_IP_CHANGED = 132,
+  /**
+   * 133: The SDK connection port has changed.
+   */
+  WARN_CHANNEL_CONNECTION_PORT_CHANGED = 133,
   /**
    * 701: An error occurs when opening the file for audio mixing.
    */
@@ -655,6 +656,26 @@ enum ERROR_CODE_TYPE {
    * (CDN live streaming does not support encrypted streams).
    */
   ERR_ENCRYPTED_STREAM_NOT_ALLOWED_PUBLISH = 130,
+
+  /**
+   * 131: License credential is invalid
+   */
+  ERR_LICENSE_CREDENTIAL_INVALID = 131,
+
+  // Licensing, keep the license error code same as the main version
+  ERR_CERT_RAW = 157,
+  ERR_CERT_JSON_PART = 158,
+  ERR_CERT_JSON_INVAL = 159,
+  ERR_CERT_JSON_NOMEM = 160,
+  ERR_CERT_CUSTOM = 161,
+  ERR_CERT_CREDENTIAL = 162,
+  ERR_CERT_SIGN = 163,
+  ERR_CERT_FAIL = 164,
+  ERR_CERT_BUF = 165,
+  ERR_CERT_NULL = 166,
+  ERR_CERT_DUEDATE = 167,
+  ERR_CERT_REQUEST = 168,
+
   /// @cond
   // signaling: 400~600
   ERR_LOGOUT_OTHER = 400,          //
@@ -1049,23 +1070,18 @@ class AgoraError {
   // Constructors.
 
   // Creates a "no error" error.
-  AgoraError() {}
+  AgoraError() : type_(ERROR_CODE_TYPE::ERR_OK),
+                 static_message_("") {}
   explicit AgoraError(ERROR_CODE_TYPE type) : type_(type) {}
   // For performance, prefer using the constructor that takes a const char* if
   // the message is a static string.
   AgoraError(ERROR_CODE_TYPE type, const char* message) : type_(type), static_message_(message) {}
 
-  // Delete the copy constructor and assignment operator; there aren't any use
-  // cases where you should need to copy an AgoraError, as opposed to moving it.
-  // Can revisit this decision if use cases arise in the future.
-  AgoraError(const AgoraError& other) = delete;
-  AgoraError& operator=(const AgoraError& other) = delete;
-
   // Move constructor and move-assignment operator.
   AgoraError(AgoraError&& other);
   AgoraError& operator=(AgoraError&& other);
 
-  ~AgoraError();
+  ~AgoraError() {}
 
   // Identical to default constructed error.
   //
@@ -1079,19 +1095,25 @@ class AgoraError {
   // Human-readable message describing the error. Shouldn't be used for
   // anything but logging/diagnostics, since messages are not guaranteed to be
   // stable.
-  const char* message() const;
+  const char* message() const { return static_message_; }
   // For performance, prefer using the method that takes a const char* if the
   // message is a static string.
-  void setMessage(const char* message);
+  void setMessage(const char* message) { static_message_ = message; }
 
   // Convenience method for situations where you only care whether or not an
   // error occurred.
   bool ok() const { return type_ == ERROR_CODE_TYPE::ERR_OK; }
 
+  // Delete the copy constructor and assignment operator; there aren't any use
+  // cases where you should need to copy an AgoraError, as opposed to moving it.
+  // Can revisit this decision if use cases arise in the future.
  private:
-  ERROR_CODE_TYPE type_ = ERROR_CODE_TYPE::ERR_OK;
+  AgoraError(const AgoraError&);
+  AgoraError& operator=(const AgoraError&);
 
-  const char* static_message_ = "";
+ private:
+  ERROR_CODE_TYPE type_;
+  const char* static_message_;
 };
 
 typedef const char* user_id_t;
@@ -1117,6 +1139,8 @@ struct UserInfo {
    * - false: The user has disabled video.
    */
   bool hasVideo;
+
+  UserInfo() : userId(NULL), hasAudio(false), hasVideo(false) {}
 };
 
 typedef util::AList<UserInfo> UserList;
@@ -1330,17 +1354,21 @@ enum ORIENTATION_MODE {
  */
 enum DEGRADATION_PREFERENCE {
   /**
-   * 0: (Default) Degrade the frame rate to maintain the video quality.
+   * 0: (Default) Degrade the frame rate and keep resolution to guarantee the video quality.
    */
   MAINTAIN_QUALITY = 0,
   /**
-   * 1: Degrades the video quality to maintain the frame rate.
+   * 1: Degrade resolution in order to maintain framerate.
    */
   MAINTAIN_FRAMERATE = 1,
   /**
-   * 2: Maintains a balance between the frame rate and video quality.
+   * 2: Maintain resolution in video quality control process. Under limited bandwidth, degrade video quality first and then degrade frame rate.
    */
   MAINTAIN_BALANCED = 2,
+  /**
+   * 3: Degrade framerate in order to maintain resolution.
+   */
+  MAINTAIN_RESOLUTION = 3,
 };
 
 /**
@@ -1355,6 +1383,7 @@ struct VideoDimensions {
    * The height of the video in number of pixels.
    */
   int height;
+
   VideoDimensions() : width(640), height(480) {}
   VideoDimensions(int w, int h) : width(w), height(h) {}
 };
@@ -1385,6 +1414,11 @@ const int COMPATIBLE_BITRATE = -1;
 const int DEFAULT_MIN_BITRATE = -1;
 
 /**
+ * -2: (For future use) Set minimum bitrate the same as target bitrate.
+ */
+const int DEFAULT_MIN_BITRATE_EQUAL_TO_TARGET_BITRATE = -2;
+
+/**
  * Video codec types.
  */
 enum VIDEO_CODEC_TYPE {
@@ -1404,10 +1438,14 @@ enum VIDEO_CODEC_TYPE {
    * 5: VP9.
    */
   VIDEO_CODEC_VP9 = 5,
-  /** 
-   * 6: Generic. 
+  /**
+   * 6: Generic.
    */
   VIDEO_CODEC_GENERIC = 6,
+  /**
+   * 6: Generic.
+   */
+  VIDEO_CODEC_GENERIC_H264 = 7,
 };
 
 /**
@@ -1427,7 +1465,10 @@ enum AUDIO_CODEC_TYPE {
    * 4: PCMU.
    */
   AUDIO_CODEC_PCMU = 4,
-  // kG722 = 5,
+  /**
+   * 5: G722.
+   */
+  AUDIO_CODEC_G722 = 5,
   // kIlbc = 6,
   /** 7: AAC. */
   // AUDIO_CODEC_AAC = 7,
@@ -1445,25 +1486,27 @@ enum AUDIO_CODEC_TYPE {
   AUDIO_CODEC_JC1 = 10,
   AUDIO_CODEC_HEAAC2 = 11,
 };
+
+/**
+ * Watermark fit mode
+ */
+enum WATERMARK_FIT_MODE {
+  /**
+   * Use the position of positionInLandscapeMode/positionInPortraitMode in #WatermarkOptions
+   * the widthRatio will be invalid.
+   */
+  FIT_MODE_COVER_POSITION,
+  /**
+   * Use width rotio of video, in this mode, positionInLandscapeMode/positionInPortraitMode
+   * in #WatermarkOptions will be invalid, and watermarkRatio will valid.
+   */
+  FIT_MODE_USE_IMAGE_RATIO
+};
+
 /**
  * The definition of the EncodedAudioFrameInfo struct.
  */
 struct EncodedAudioFrameInfo {
-  EncodedAudioFrameInfo()
-      : speech(true),
-        codec(AUDIO_CODEC_AACLC),
-        sampleRateHz(0),
-        samplesPerChannel(0),
-        sendEvenIfEmpty(true),
-        numberOfChannels(0) {}
-
-  EncodedAudioFrameInfo(const EncodedAudioFrameInfo& rhs)
-      : speech(rhs.speech),
-        codec(rhs.codec),
-        sampleRateHz(rhs.sampleRateHz),
-        samplesPerChannel(rhs.samplesPerChannel),
-        sendEvenIfEmpty(rhs.sendEvenIfEmpty),
-        numberOfChannels(rhs.numberOfChannels) {}
   /**
    * Determines whether the audio source is speech.
    * - true: (Default) The audio source is speech.
@@ -1494,19 +1537,27 @@ struct EncodedAudioFrameInfo {
    * The number of audio channels of the audio frame.
    */
   int numberOfChannels;
+
+  EncodedAudioFrameInfo()
+      : speech(true),
+        codec(AUDIO_CODEC_AACLC),
+        sampleRateHz(0),
+        samplesPerChannel(0),
+        sendEvenIfEmpty(true),
+        numberOfChannels(0) {}
+
+  EncodedAudioFrameInfo(const EncodedAudioFrameInfo& rhs)
+      : speech(rhs.speech),
+        codec(rhs.codec),
+        sampleRateHz(rhs.sampleRateHz),
+        samplesPerChannel(rhs.samplesPerChannel),
+        sendEvenIfEmpty(rhs.sendEvenIfEmpty),
+        numberOfChannels(rhs.numberOfChannels) {}
 };
 /**
  * The definition of the AudioPcmDataInfo struct.
  */
 struct AudioPcmDataInfo {
-  AudioPcmDataInfo() : sampleCount(0), samplesOut(0), elapsedTimeMs(0), ntpTimeMs(0) {}
-
-  AudioPcmDataInfo(const AudioPcmDataInfo& rhs)
-      : sampleCount(rhs.sampleCount),
-        samplesOut(rhs.samplesOut),
-        elapsedTimeMs(rhs.elapsedTimeMs),
-        ntpTimeMs(rhs.ntpTimeMs) {}
-
   /**
    * The sample count of the PCM data that you expect.
    */
@@ -1519,6 +1570,14 @@ struct AudioPcmDataInfo {
   size_t samplesOut;
   int64_t elapsedTimeMs;
   int64_t ntpTimeMs;
+
+  AudioPcmDataInfo() : sampleCount(0), samplesOut(0), elapsedTimeMs(0), ntpTimeMs(0) {}
+
+  AudioPcmDataInfo(const AudioPcmDataInfo& rhs)
+      : sampleCount(rhs.sampleCount),
+        samplesOut(rhs.samplesOut),
+        elapsedTimeMs(rhs.elapsedTimeMs),
+        ntpTimeMs(rhs.ntpTimeMs) {}
 };
 /**
  * Packetization modes. Applies to H.264 only.
@@ -1527,33 +1586,25 @@ enum H264PacketizeMode {
   NonInterleaved = 0,  // Mode 1 - STAP-A, FU-A is allowed
   SingleNalUnit,       // Mode 0 - only single NALU allowed
 };
+
+/**
+ * Video stream types.
+ */
+enum VIDEO_STREAM_TYPE {
+  /**
+   * 0: The high-quality video stream, which has a higher resolution and bitrate.
+   */
+  VIDEO_STREAM_HIGH = 0,
+  /**
+   * 1: The low-quality video stream, which has a lower resolution and bitrate.
+   */
+  VIDEO_STREAM_LOW = 1,
+};
+
 /**
  * The definition of the EncodedVideoFrameInfo struct.
  */
 struct EncodedVideoFrameInfo {
-  EncodedVideoFrameInfo()
-      : codecType(VIDEO_CODEC_H264),
-        width(0),
-        height(0),
-        framesPerSecond(0),
-        frameType(VIDEO_FRAME_TYPE_BLANK_FRAME),
-        rotation(VIDEO_ORIENTATION_0),
-        trackId(0),
-        renderTimeMs(0),
-        internalSendTs(0),
-        uid(0) {}
-
-  EncodedVideoFrameInfo(const EncodedVideoFrameInfo& rhs)
-      : codecType(rhs.codecType),
-        width(rhs.width),
-        height(rhs.height),
-        framesPerSecond(rhs.framesPerSecond),
-        frameType(rhs.frameType),
-        rotation(rhs.rotation),
-        trackId(rhs.trackId),
-        renderTimeMs(rhs.renderTimeMs),
-        internalSendTs(rhs.internalSendTs),
-        uid(rhs.uid) {}
   /**
    * The video codec: #VIDEO_CODEC_TYPE.
    */
@@ -1595,6 +1646,54 @@ struct EncodedVideoFrameInfo {
    * ID of the user.
    */
   uid_t uid;
+  /**
+   * The stream type of video frame.
+   */
+  VIDEO_STREAM_TYPE streamType;
+
+  EncodedVideoFrameInfo()
+      : codecType(VIDEO_CODEC_H264),
+        width(0),
+        height(0),
+        framesPerSecond(0),
+        frameType(VIDEO_FRAME_TYPE_BLANK_FRAME),
+        rotation(VIDEO_ORIENTATION_0),
+        trackId(0),
+        renderTimeMs(0),
+        internalSendTs(0),
+        uid(0),
+        streamType(VIDEO_STREAM_HIGH) {}
+
+  EncodedVideoFrameInfo(const EncodedVideoFrameInfo& rhs)
+      : codecType(rhs.codecType),
+        width(rhs.width),
+        height(rhs.height),
+        framesPerSecond(rhs.framesPerSecond),
+        frameType(rhs.frameType),
+        rotation(rhs.rotation),
+        trackId(rhs.trackId),
+        renderTimeMs(rhs.renderTimeMs),
+        internalSendTs(rhs.internalSendTs),
+        uid(rhs.uid),
+        streamType(rhs.streamType) {}
+};
+
+/**
+ * Video mirror mode types.
+ */
+enum VIDEO_MIRROR_MODE_TYPE {
+  /**
+   * (Default) 0: The mirror mode determined by the SDK.
+   */
+  VIDEO_MIRROR_MODE_AUTO = 0,
+  /**
+   * 1: Enable the mirror mode.
+   */
+  VIDEO_MIRROR_MODE_ENABLED = 1,
+  /**
+   * 2: Disable the mirror mode.
+   */
+  VIDEO_MIRROR_MODE_DISABLED = 2,
 };
 
 /**
@@ -1695,22 +1794,29 @@ struct VideoEncoderConfiguration {
    */
   DEGRADATION_PREFERENCE degradationPreference;
 
-  VideoEncoderConfiguration(const VideoDimensions& d, int f, int b, ORIENTATION_MODE m)
+  /**
+   * If mirror_type is set to VIDEO_MIRROR_MODE_ENABLED, then the video frame would be mirrored before encoding.
+   */
+  VIDEO_MIRROR_MODE_TYPE mirrorMode;
+
+  VideoEncoderConfiguration(const VideoDimensions& d, int f, int b, ORIENTATION_MODE m, VIDEO_MIRROR_MODE_TYPE mirror = VIDEO_MIRROR_MODE_DISABLED)
       : codecType(VIDEO_CODEC_H264),
         dimensions(d),
         frameRate(f),
         bitrate(b),
         minBitrate(DEFAULT_MIN_BITRATE),
         orientationMode(m),
-        degradationPreference(MAINTAIN_QUALITY) {}
-  VideoEncoderConfiguration(int width, int height, int f, int b, ORIENTATION_MODE m)
+        degradationPreference(MAINTAIN_QUALITY),
+        mirrorMode(mirror) {}
+  VideoEncoderConfiguration(int width, int height, int f, int b, ORIENTATION_MODE m, VIDEO_MIRROR_MODE_TYPE mirror = VIDEO_MIRROR_MODE_DISABLED)
       : codecType(VIDEO_CODEC_H264),
         dimensions(width, height),
         frameRate(f),
         bitrate(b),
         minBitrate(DEFAULT_MIN_BITRATE),
         orientationMode(m),
-        degradationPreference(MAINTAIN_QUALITY) {}
+        degradationPreference(MAINTAIN_QUALITY),
+        mirrorMode(mirror) {}
   VideoEncoderConfiguration(const VideoEncoderConfiguration& config)
       : codecType(config.codecType),
         dimensions(config.dimensions),
@@ -1718,7 +1824,8 @@ struct VideoEncoderConfiguration {
         bitrate(config.bitrate),
         minBitrate(config.minBitrate),
         orientationMode(config.orientationMode),
-        degradationPreference(config.degradationPreference) {}
+        degradationPreference(config.degradationPreference),
+        mirrorMode(config.mirrorMode) {}
   VideoEncoderConfiguration()
       : codecType(VIDEO_CODEC_H264),
         dimensions(FRAME_WIDTH_640, FRAME_HEIGHT_360),
@@ -1726,8 +1833,10 @@ struct VideoEncoderConfiguration {
         bitrate(STANDARD_BITRATE),
         minBitrate(DEFAULT_MIN_BITRATE),
         orientationMode(ORIENTATION_MODE_ADAPTIVE),
-        degradationPreference(MAINTAIN_QUALITY) {}
+        degradationPreference(MAINTAIN_QUALITY),
+        mirrorMode(VIDEO_MIRROR_MODE_DISABLED) {}
 };
+
 /**
  * The definition of the of SimulcastStreamConfig struct.
  */
@@ -1740,7 +1849,12 @@ struct SimulcastStreamConfig {
    * The video bitrate (Kbps).
    */
   int bitrate;
-  SimulcastStreamConfig() : dimensions(160, 120), bitrate(65) {}
+  /**
+   * The video framerate.
+   */
+  int framerate;
+
+  SimulcastStreamConfig() : dimensions(160, 120), bitrate(65), framerate(5) {}
 };
 
 /**
@@ -1766,6 +1880,59 @@ struct Rectangle {
 
   Rectangle() : x(0), y(0), width(0), height(0) {}
   Rectangle(int xx, int yy, int ww, int hh) : x(xx), y(yy), width(ww), height(hh) {}
+};
+
+/** The options of the watermark image to be added. */
+struct WatermarkRatio {
+  /**
+   * The ratio of the width of the video, see #WATERMARK_FIT_MODE::FIT_MODE_USE_IMAGE_RATIO
+   */
+  float xRatio;
+  /**
+   * The ratio of the height of the video, see #WATERMARK_FIT_MODE::FIT_MODE_USE_IMAGE_RATIO
+   */
+  float yRatio;
+  /**
+   * The ratio of the width of the video, see #WATERMARK_FIT_MODE::FIT_MODE_USE_IMAGE_RATIO
+   */
+  float widthRatio;
+
+  WatermarkRatio() : xRatio(0.0), yRatio(0.0), widthRatio(0.0) {}
+  WatermarkRatio(float x, float y, float width) : xRatio(x), yRatio(y), widthRatio(width) {}
+};
+
+/** The options of the watermark image to be added. */
+struct WatermarkOptions {
+  /** Sets whether or not the watermark image is visible in the local video preview:
+   * - true: (Not support) The watermark image is visible in preview.
+   * - false: (Default) The watermark image is not visible in preview.
+   */
+  bool visibleInPreview;
+  /**
+   * The watermark position in the landscape mode. See Rectangle.
+   * For detailed information on the landscape mode, see the advanced guide *Video Rotation*.
+   */
+  Rectangle positionInLandscapeMode;
+  /**
+   * The watermark position in the portrait mode. See #WATERMARK_FIT_MODE::FIT_MODE_USE_IMAGE_RATIO.
+   */
+  Rectangle positionInPortraitMode;
+  /**
+   * The watermark position in the ratio mode. See Rectangle.
+   * For detailed information on the portrait mode, see the advanced guide *Video Rotation*.
+   */
+  WatermarkRatio watermarkRatio;
+  /**
+   * The fit mode of watermark.
+   */
+  WATERMARK_FIT_MODE mode;
+
+  WatermarkOptions()
+      : visibleInPreview(false)
+      , positionInLandscapeMode(0, 0, 0, 0)
+      , positionInPortraitMode(0, 0, 0, 0)
+      , mode(FIT_MODE_COVER_POSITION)
+  {}
 };
 
 /**
@@ -1845,6 +2012,18 @@ struct RtcStats {
    */
   double cpuTotalUsage;
   /**
+   * The memory usage ratio of the app (%).
+   */
+  double memoryAppUsageRatio;
+  /**
+   * The memory usage ratio of the system (%).
+   */
+  double memoryTotalUsageRatio;
+  /**
+   * The memory usage of the app (KB).
+   */
+  int memoryAppUsageInKbytes;
+  /**
    * The time elapsed from the when the app starts connecting to an Agora channel
    * to when the connection is established. 0 indicates that this member does not apply.
    */
@@ -1869,6 +2048,40 @@ struct RtcStats {
    * 0 indicates that this member does not apply.
    */
   int packetsBeforeFirstKeyFramePacket;
+    /**
+   * The duration (ms) between the last time unmute audio and the first audio packet is received.
+   * 0 indicates that this member does not apply.
+   */
+  int firstAudioPacketDurationAfterUnmute;
+  /**
+   * The duration (ms) between the last time unmute video and the first video packet is received.
+   * 0 indicates that this member does not apply.
+   */
+  int firstVideoPacketDurationAfterUnmute;
+  /**
+   * The duration (ms) between the last time unmute video and the first video key frame is received.
+   * 0 indicates that this member does not apply.
+   */
+  int firstVideoKeyFramePacketDurationAfterUnmute;
+  /**
+   * The duration (ms) between the last time unmute video and the first video key frame is decoded.
+   * 0 indicates that this member does not apply.
+   */
+  int firstVideoKeyFrameDecodedDurationAfterUnmute;
+  /**
+   * The duration (ms) between the last time unmute video and the first video key frame is rendered.
+   * 0 indicates that this member does not apply.
+   */
+  int firstVideoKeyFrameRenderedDurationAfterUnmute;
+  /**
+   * The packet loss rate of sender(broadcaster).
+   */
+  int txPacketLossRate;
+  /**
+   * The packet loss rate of receiver(audience).
+   */
+  int rxPacketLossRate;
+
   RtcStats() :
       connectionId(0),
       duration(0),
@@ -1892,7 +2105,55 @@ struct RtcStats {
       firstAudioPacketDuration(0),
       firstVideoPacketDuration(0),
       firstVideoKeyFramePacketDuration(0),
-      packetsBeforeFirstKeyFramePacket(0) {}
+      packetsBeforeFirstKeyFramePacket(0),
+      firstAudioPacketDurationAfterUnmute(0),
+      firstVideoPacketDurationAfterUnmute(0),
+      firstVideoKeyFramePacketDurationAfterUnmute(0),
+      firstVideoKeyFrameDecodedDurationAfterUnmute(0),
+      firstVideoKeyFrameRenderedDurationAfterUnmute(0),
+      txPacketLossRate(0),
+      rxPacketLossRate(0) {}
+};
+
+/**
+* Video source types definition.
+**/
+enum VIDEO_SOURCE_TYPE {
+  /** Video captured by the camera.
+   */
+  VIDEO_SOURCE_CAMERA_PRIMARY,
+  /** Video captured by the secondary camera.
+   */
+  VIDEO_SOURCE_CAMERA_SECONDARY,
+  /** Video for screen sharing.
+   */
+  VIDEO_SOURCE_SCREEN_PRIMARY,
+  /** Video for secondary screen sharing.
+   */
+  VIDEO_SOURCE_SCREEN_SECONDARY,
+  /** Not define.
+   */
+  VIDEO_SOURCE_CUSTOM,
+  /** Video for media player sharing.
+   */
+  VIDEO_SOURCE_MEDIA_PLAYER,
+  /** Video for png image.
+   */
+  VIDEO_SOURCE_RTC_IMAGE_PNG,
+  /** Video for png image.
+   */
+  VIDEO_SOURCE_RTC_IMAGE_JPEG,
+  /** Video for png image.
+   */
+  VIDEO_SOURCE_RTC_IMAGE_GIF,
+  /** Remote video received from network.
+   */
+  VIDEO_SOURCE_REMOTE,
+  /** Video for transcoded.
+   */
+  VIDEO_SOURCE_TRANSCODED,
+
+  VIDEO_SOURCE_UNKNOWN = 100
 };
 
 /**
@@ -1960,6 +2221,7 @@ struct RemoteAudioStats
    * audio is available.
    */
   int frozenRate;
+
   RemoteAudioStats() :
     uid(0),
     quality(0),
@@ -2008,7 +2270,8 @@ enum AUDIO_PROFILE_TYPE {
   /**
    * 6: Reserved.
    */
-  AUDIO_PROFILE_NUM = 6,
+  AUDIO_PROFILE_IOT = 6,
+  AUDIO_PROFILE_NUM = 7
 };
 
 /**
@@ -2046,9 +2309,13 @@ enum AUDIO_SCENARIO_TYPE {
    */
   AUDIO_SCENARIO_HIGH_DEFINITION = 6,
   /**
-   * 7: Reserved.
+   * 7: Chorus
    */
-  AUDIO_SCENARIO_NUM = 7,
+  AUDIO_SCENARIO_CHORUS = 7,
+  /**
+   * 8: Reserved.
+   */
+  AUDIO_SCENARIO_NUM = 8,
 };
 
 /**
@@ -2076,6 +2343,7 @@ struct VideoFormat {
    * The video frame rate (fps).
    */
   int fps;
+
   VideoFormat() : width(FRAME_WIDTH_640), height(FRAME_HEIGHT_360), fps(FRAME_RATE_FPS_15) {}
   VideoFormat(int w, int h, int f) : width(w), height(h), fps(f) {}
 };
@@ -2108,38 +2376,6 @@ enum VIDEO_CONTENT_HINT {
    * unintelligible should be avoided.
    */
   CONTENT_HINT_DETAILS
-};
-
-/**
- * Video mirror mode types.
- */
-enum VIDEO_MIRROR_MODE_TYPE {
-  /**
-   * (Default) 0: The mirror mode determined by the SDK.
-   */
-  VIDEO_MIRROR_MODE_AUTO = 0,
-  /**
-   * 1: Enable the mirror mode.
-   */
-  VIDEO_MIRROR_MODE_ENABLED = 1,
-  /**
-   * 2: Disable the mirror mode.
-   */
-  VIDEO_MIRROR_MODE_DISABLED = 2,
-};
-
-/**
- * Remote video stream types.
- */
-enum REMOTE_VIDEO_STREAM_TYPE {
-  /**
-   * 0: The high-quality video stream, which features in high-resolution and high-bitrate.
-   */
-  REMOTE_VIDEO_STREAM_HIGH = 0,
-  /**
-   * 1: The low-quality video stream, which features in low-resolution and low-bitrate.
-   */
-  REMOTE_VIDEO_STREAM_LOW = 1,
 };
 
 /**
@@ -2412,9 +2648,17 @@ enum REMOTE_VIDEO_STATE_REASON {
  */
 struct VideoTrackInfo {
   /**
+   * Whether the video track is local or remote.
+   * - true: The video track is local.
+   * - false: The video track is remote.
+   */
+  bool isLocal;
+
+  /**
    * ID of the user who publishes the video track.
    */
   uid_t ownerUid;
+
   /**
    * ID of the video track.
    */
@@ -2424,9 +2668,9 @@ struct VideoTrackInfo {
    */
   conn_id_t connectionId;
   /**
-   * The video stream type: #REMOTE_VIDEO_STREAM_TYPE.
+   * The video stream type: #VIDEO_STREAM_TYPE.
    */
-  REMOTE_VIDEO_STREAM_TYPE streamType;
+  VIDEO_STREAM_TYPE streamType;
   /**
    * The video codec type: #VIDEO_CODEC_TYPE.
    */
@@ -2437,6 +2681,15 @@ struct VideoTrackInfo {
    * - false: The video track does not contain encoded video frame only.
    */
   bool encodedFrameOnly;
+  /**
+   * The video source type: #VIDEO_SOURCE_TYPE
+   */
+  VIDEO_SOURCE_TYPE sourceType;
+
+  VideoTrackInfo()
+  : isLocal(false), ownerUid(0), trackId(0), connectionId(0)
+  , streamType(VIDEO_STREAM_HIGH), codecType(VIDEO_CODEC_H264)
+  , encodedFrameOnly(false), sourceType(VIDEO_SOURCE_CAMERA_PRIMARY) {}
 };
 
 /**
@@ -2452,6 +2705,8 @@ struct AudioVolumeInfo {
    * The volume of the speaker that ranges from 0 to 255.
    */
   unsigned int volume;  // [0,255]
+
+  AudioVolumeInfo() : uid(0), userId(0), volume(0) {}
 };
 
 /**
@@ -2460,6 +2715,7 @@ struct AudioVolumeInfo {
 class IPacketObserver {
  public:
   virtual ~IPacketObserver() {}
+
   /**
    * The definition of the Packet struct.
    */
@@ -2472,7 +2728,10 @@ class IPacketObserver {
      * The size of the audio packet.
      */
     unsigned int size;
+
+    Packet() : buffer(NULL), size(0) {}
   };
+
   /**
    * Occurs when the SDK is ready to send the audio packet.
    * @param packet The audio packet to be sent: Packet.
@@ -2597,8 +2856,12 @@ struct LocalAudioStats
    * The internal payload type
    */
   int internalCodec;
-};
 
+  LocalAudioStats() : numChannels(0),
+                      sentSampleRate(0),
+                      sentBitrate(0),
+                      internalCodec(0) {}
+};
 
 /**
  * States of the RTMP streaming.
@@ -2709,7 +2972,6 @@ enum RTMP_STREAM_PUBLISH_ERROR {
 /** The definition of the RtcImage struct.
  */
 typedef struct RtcImage {
-  RtcImage() : url(NULL), x(0), y(0), width(0), height(0) {}
   /**
    * The URL address of the watermark on the video.
    */
@@ -2732,6 +2994,12 @@ typedef struct RtcImage {
    * The height of the watermark on the video.
    */
   int height;
+  /**
+   * Order attribute for an ordering of overlapping two-dimensional objects.
+   */
+  int zOrder;
+
+  RtcImage() : url(NULL), x(0), y(0), width(0), height(0), zOrder(0) {}
 } RtcImage;
 
 /**
@@ -2771,6 +3039,7 @@ struct TranscodingUser {
    * User ID of the CDN live streaming.
    */
   uid_t uid;
+  user_id_t userId;
   /**
    * The horizontal position of the top left corner of the video frame.
    */
@@ -2813,8 +3082,10 @@ struct TranscodingUser {
    * broadcaster uses dual sound channel, only the left sound channel is used for streaming.
   */
   int audioChannel;
+
   TranscodingUser()
       : uid(0),
+        userId(NULL),
         x(0),
         y(0),
         width(0),
@@ -2896,10 +3167,24 @@ struct LiveTranscoding {
   */
   RtcImage* watermark;
   /**
+    * The variables means the count of watermark.
+    * if watermark is array, watermarkCount is count of watermark.
+    * if watermark is just a pointer, watermarkCount pointer to object address. At the same time, watermarkCount must be 0 or 1.
+    * default value: 0, compatible with old user-api
+  */
+  unsigned int watermarkCount;
+  /**
    * The background image added to the CDN live publishing stream. Once a background image is added,
    * the audience of the CDN live publishing stream can see it. See #RtcImage.
   */
   RtcImage* backgroundImage;
+  /**
+    * The variables means the count of backgroundImage.
+    * if backgroundImage is array, backgroundImageCount is count of backgroundImage.
+    * if backgroundImage is just a pointer, backgroundImageCount pointer to object address. At the same time, backgroundImageCount must be 0 or 1.
+    * default value: 0, compatible with old user-api
+  */
+  unsigned int backgroundImageCount;
   /**
    * The audio sample rates: #AUDIO_SAMPLE_RATE_TYPE.
    */
@@ -2938,11 +3223,103 @@ struct LiveTranscoding {
         transcodingExtraInfo(NULL),
         metadata(NULL),
         watermark(NULL),
+        watermarkCount(0),
         backgroundImage(NULL),
+        backgroundImageCount(0),
         audioSampleRate(AUDIO_SAMPLE_RATE_48000),
         audioBitrate(48),
         audioChannels(1),
         audioCodecProfile(AUDIO_CODEC_PROFILE_LC_AAC) {}
+};
+
+/**
+ * The definition of the LocalTranscodingVideoStream struct.
+ */
+struct TranscodingVideoStream {
+  /**
+   * Source type of video stream.
+   */
+  VIDEO_SOURCE_TYPE sourceType;
+  /**
+   * Remote user uid if sourceType is VIDEO_SOURCE_REMOTE.
+   */
+  uid_t remoteUserUid;
+  /**
+   * connectionId of Remote user uid if sourceType is VIDEO_SOURCE_REMOTE.
+   * Set to DEFAULT_CONNECTION_ID if you only join single channel.
+   */
+  conn_id_t connectionId;
+  /**
+   * RTC image if sourceType is VIDEO_SOURCE_RTC_IMAGE.
+   */
+  const char* imageUrl; 
+  /**
+   * The horizontal position of the top left corner of the video frame.
+   */
+  int x;
+  /**
+   * The vertical position of the top left corner of the video frame.
+   */
+  int y;
+  /**
+   * The width of the video frame.
+   */
+  int width;
+  /**
+   * The height of the video frame.
+   */
+  int height;
+  /**
+   * The layer of the video frame that ranges from 1 to 100:
+  * - 1: (Default) The lowest layer.
+  * - 100: The highest layer.
+  */
+  int zOrder;
+  /**
+   * The transparency of the video frame.
+   */
+  double alpha;
+  /**
+   * mirror of the source video frame (only valid for camera streams)
+   */
+  bool mirror;
+
+  TranscodingVideoStream()
+      : sourceType(VIDEO_SOURCE_CAMERA_PRIMARY),
+        remoteUserUid(0),
+        connectionId(DEFAULT_CONNECTION_ID),
+        imageUrl(NULL),
+        x(0),
+        y(0),
+        width(0),
+        height(0),
+        zOrder(0),
+        alpha(1.0),
+        mirror(false) {}
+};
+
+
+/**
+ * The definition of the LocalTranscodingConfiguration struct.
+ */
+struct LocalTranscoderConfiguration {
+  /**
+   * The number of VideoInputStreams in the transcoder.
+   */
+  unsigned int streamCount;
+  /**
+   * The video stream layout configuration in the transcoder.
+   */
+  TranscodingVideoStream* VideoInputStreams;
+  /**
+   * The video encoder configuration of transcoded video.
+   */
+  VideoEncoderConfiguration videoOutputConfiguration;
+
+  LocalTranscoderConfiguration()
+      : streamCount(0),
+        VideoInputStreams(NULL),
+        videoOutputConfiguration() {}
 };
 
 /**
@@ -3012,6 +3389,10 @@ struct LastmileProbeOneWayResult {
    * The estimated available bandwidth (bps).
    */
   unsigned int availableBandwidth;
+
+  LastmileProbeOneWayResult() : packetLossRate(0),
+                                jitter(0),
+                                availableBandwidth(0) {}
 };
 
 /**
@@ -3035,6 +3416,8 @@ struct LastmileProbeResult {
    * The round-trip delay time (ms).
    */
   unsigned int rtt;
+
+  LastmileProbeResult() : state(LASTMILE_PROBE_RESULT_UNAVAILABLE), rtt(0) {}
 };
 
 /**
@@ -3118,6 +3501,40 @@ enum CONNECTION_CHANGED_REASON_TYPE
 };
 
 /**
+ * The network type.
+ */
+enum NETWORK_TYPE {
+  /**
+   * -1: The network type is unknown.
+   */
+  NETWORK_TYPE_UNKNOWN = -1,
+  /**
+   * 0: The network type is disconnected.
+   */
+  NETWORK_TYPE_DISCONNECTED = 0,
+  /**
+   * 1: The network type is LAN.
+   */
+  NETWORK_TYPE_LAN = 1,
+  /**
+   * 2: The network type is Wi-Fi.
+   */
+  NETWORK_TYPE_WIFI = 2,
+  /**
+   * 3: The network type is mobile 2G.
+   */
+  NETWORK_TYPE_MOBILE_2G = 3,
+  /**
+   * 4: The network type is mobile 3G.
+   */
+  NETWORK_TYPE_MOBILE_3G = 4,
+  /**
+   * 5: The network type is mobile 4G.
+   */
+  NETWORK_TYPE_MOBILE_4G = 5,
+};
+
+/**
  * The definition of the VideoCanvas struct, which contains the information of the video display window.
  */
 struct VideoCanvas {
@@ -3128,36 +3545,36 @@ struct VideoCanvas {
   /**
    * The video display mode: #RENDER_MODE_TYPE.
    */
-  int renderMode;
+  media::base::RENDER_MODE_TYPE renderMode;
+  /**
+   * The video mirror mode:
+   */
+  VIDEO_MIRROR_MODE_TYPE mirrorMode;
   /**
    * The user ID.
    */
   uid_t uid;
-  void* priv;  // private data (underlying video engine denotes it)
-  bool isScreenView;
+  user_id_t userId;
 
-  VideoCanvas() : view(NULL), renderMode(media::base::RENDER_MODE_HIDDEN), uid(0), priv(NULL),
-                  isScreenView(false) {}
-  VideoCanvas(view_t v, int m, uid_t u)
-      : view(v), renderMode(m), uid(u), priv(NULL), isScreenView(false) {}
+  void* priv;  // private data (underlying video engine denotes it)
+
+  size_t priv_size;
+
+  VIDEO_SOURCE_TYPE sourceType;
+
+  VideoCanvas() : view(NULL), renderMode(media::base::RENDER_MODE_HIDDEN), mirrorMode(VIDEO_MIRROR_MODE_AUTO),
+      uid(0), userId(NULL), priv(NULL), priv_size(0), sourceType(VIDEO_SOURCE_CAMERA_PRIMARY) {}
+
+  VideoCanvas(view_t v, media::base::RENDER_MODE_TYPE m, VIDEO_MIRROR_MODE_TYPE mt, uid_t u)
+      : view(v), renderMode(m), mirrorMode(mt), uid(u), userId(NULL), priv(NULL), priv_size(0),
+        sourceType(VIDEO_SOURCE_CAMERA_PRIMARY) {}
+  VideoCanvas(view_t v, media::base::RENDER_MODE_TYPE m, VIDEO_MIRROR_MODE_TYPE mt, user_id_t u)
+      : view(v), renderMode(m), mirrorMode(mt), uid(0), userId(u), priv(NULL), priv_size(0),
+        sourceType(VIDEO_SOURCE_CAMERA_PRIMARY) {}
 };
 
 /**
  * Preset local voice reverberation options.
- * bitmap allocation:
- * |  bit31  |    bit30 - bit24   |        bit23 - bit16        | bit15 - bit8 |  bit7 - bit0   |
- * |---------|--------------------|-----------------------------|--------------|----------------|
- * |reserved | 0x1: voice beauty  | 0x1: chat beautification    | effect types | effect settings|
- * |         |                    | 0x2: singing beautification |              |                |
- * |         |                    | 0x3: timbre transform       |              |                |
- * |         |--------------------|-----------------------------|              |                |
- * |         | 0x2: audio effect  | 0x1: space construction     |              |                |
- * |         |                    | 0x2: voice changer effect   |              |                |
- * |         |                    | 0x3: style transform        |              |                |
- * |         |                    | 0x4: electronic sound       |              |                |
- * |         |                    | 0x5: magic tone             |              |                |
- * |         |--------------------|-----------------------------|              |                |
- * |         | 0x3: voice changer | 0x1: voice transform        |              |                |
  */
 enum AUDIO_REVERB_PRESET {
   /**
@@ -3165,37 +3582,64 @@ enum AUDIO_REVERB_PRESET {
    */
   AUDIO_REVERB_OFF = 0, // Turn off audio reverb
   /**
-   * 0x02010100: KTV venue (enhanced).
+   * 0x00000001: Pop music.
    */
-  AUDIO_REVERB_FX_KTV = 0x02010100,
+  AUDIO_REVERB_POPULAR = 0x00000001,
   /**
-   * 0x02010200: Concert hall (enhanced).
+   * 0x00000002: R&B music.
    */
-  AUDIO_REVERB_FX_VOCAL_CONCERT = 0x02010200,
+  AUDIO_REVERB_RNB = 0x00000002,
   /**
-   * 0x02020100: Uncle's voice.
+   * 0x00000003: Rock music.
    */
-  AUDIO_REVERB_FX_UNCLE = 0x02020100,
+  AUDIO_REVERB_ROCK = 0x00000003,
   /**
-   * 0x02020400: Little sister's voice.
+   * 0x00000004: Hip-hop music.
    */
-  AUDIO_REVERB_FX_SISTER = 0x02020400,
+  AUDIO_REVERB_HIPHOP = 0x00000004,
   /**
-   * 0x02010300: Recording studio (enhanced).
+   * 0x00000005: Concert hall.
    */
-  AUDIO_REVERB_FX_STUDIO = 0x02010300,
+  AUDIO_REVERB_VOCAL_CONCERT = 0x00000005,
   /**
-   * 0x02030200: Pop music (enhanced).
+   * 0x00000006: KTV venue.
    */
-  AUDIO_REVERB_FX_POPULAR = 0x02030200,
+  AUDIO_REVERB_KTV = 0x00000006,
   /**
-   * 0x02030100: R&B music (enhanced).
+   * 0x00000007: Recording studio.
    */
-  AUDIO_REVERB_FX_RNB = 0x02030100,
+  AUDIO_REVERB_STUDIO = 0x00000007,
+  /** 0x00100001: KTV venue (enhanced).
+  */
+  AUDIO_REVERB_FX_KTV = 0x00100001,
   /**
-   * 0x02010400: Vintage phonograph.
+   * 0x00100002: Concert hall (enhanced).
    */
-  AUDIO_REVERB_FX_PHONOGRAPH = 0x02010400
+  AUDIO_REVERB_FX_VOCAL_CONCERT = 0x00100002,
+  /**
+   * 0x00100003: Uncle's voice.
+   */
+  AUDIO_REVERB_FX_UNCLE = 0x00100003,
+  /**
+   * 0x00100004: Little sister's voice.
+   */
+  AUDIO_REVERB_FX_SISTER = 0x00100004,
+  /**
+   * 0x00100005: Recording studio (enhanced).
+   */
+  AUDIO_REVERB_FX_STUDIO = 0x00100005,
+  /**
+   * 0x00100006: Pop music (enhanced).
+   */
+  AUDIO_REVERB_FX_POPULAR = 0x00100006,
+  /**
+   * 0x00100007: R&B music (enhanced).
+   */
+  AUDIO_REVERB_FX_RNB = 0x00100007,
+  /**
+   * 0x00100008: Vintage phonograph.
+   */
+  AUDIO_REVERB_FX_PHONOGRAPH = 0x00100008
 };
 
 /**
@@ -3226,6 +3670,100 @@ struct ScreenCaptureParameters {
 };
 
 /**
+ * The audio recording quality type.
+ */
+enum AUDIO_RECORDING_QUALITY_TYPE {
+  /**
+   * 0: Low audio recording quality.
+   */
+  AUDIO_RECORDING_QUALITY_LOW = 0,
+  /**
+   * 1: Medium audio recording quality.
+   */
+  AUDIO_RECORDING_QUALITY_MEDIUM = 1,
+  /**
+   * 2: High audio recording quality.
+   */
+  AUDIO_RECORDING_QUALITY_HIGH = 2,
+};
+
+/** 
+ * The audio file record type.
+ */
+enum AUDIO_FILE_RECORDING_TYPE {
+  /**
+   * 1: mic audio file recording.
+   */
+  AUDIO_FILE_RECORDING_MIC = 1,
+  /**
+   * 2: playback audio file recording.
+   */
+  AUDIO_FILE_RECORDING_PLAYBACK = 2,
+  /**
+   * 3: mixed audio file recording, include mic and playback.
+   */
+  AUDIO_FILE_RECORDING_MIXED = 3,
+};
+
+/**
+ * The Audio file recording options.
+ */
+struct AudioFileRecordingConfig {
+  /**
+   * The path of recording file.
+   * The string of the file path is in UTF-8 code.
+   */
+  const char* filePath;
+  /**
+   * Determines whether to encode audio data.
+   * - true: Encode the audio data with AAC Encoder.
+   * - false: (Default) Do not encode the audio data. Save audio data as a wav file.
+   */
+  bool encode;
+  /**
+   * The sample rate of audio data. Default is 32000.
+   * The optional value is 16000, 32000, 44100, or 48000.
+   */
+  int sampleRate;
+  /**
+   * The recording type of audio data.
+   */
+  AUDIO_FILE_RECORDING_TYPE fileRecordingType;
+  /**
+   * The recording quality of audio data.
+   */
+  AUDIO_RECORDING_QUALITY_TYPE quality;
+
+  AudioFileRecordingConfig()
+    : filePath(NULL),
+      encode(false),
+      sampleRate(32000),
+      fileRecordingType(AUDIO_FILE_RECORDING_MIXED),
+      quality(AUDIO_RECORDING_QUALITY_LOW) {}
+
+  AudioFileRecordingConfig(const char* file_path, int sample_rate, AUDIO_RECORDING_QUALITY_TYPE quality_type)
+    : filePath(file_path),
+      encode(false),
+      sampleRate(sample_rate),
+      fileRecordingType(AUDIO_FILE_RECORDING_MIXED),
+      quality(quality_type) {}
+
+  AudioFileRecordingConfig(const char* file_path, bool enc, int sample_rate, AUDIO_FILE_RECORDING_TYPE type, AUDIO_RECORDING_QUALITY_TYPE quality_type)
+    : filePath(file_path),
+      encode(enc),
+      sampleRate(sample_rate),
+      fileRecordingType(type),
+      quality(quality_type) {}
+
+  AudioFileRecordingConfig(const AudioFileRecordingConfig &rhs)
+    : filePath(rhs.filePath),
+      encode(rhs.encode),
+      sampleRate(rhs.sampleRate),
+      fileRecordingType(rhs.fileRecordingType),
+      quality(rhs.quality) {}
+};
+
+/**
  * Preset local voice changer options.
  */
 enum VOICE_CHANGER_PRESET {
@@ -3234,89 +3772,264 @@ enum VOICE_CHANGER_PRESET {
    */
   VOICE_CHANGER_OFF = 0, //Turn off the voice changer
   /**
-   * 0x02020200: The voice of an old man.
+   * 0x00000001: The voice of an old man.
    */
-  VOICE_CHANGER_OLDMAN = 0x02020200,
+  VOICE_CHANGER_OLDMAN = 0x00000001,
   /**
-   * 0x02020300: The voice of a little boy.
+   * 0x00000002: The voice of a little boy.
    */
-  VOICE_CHANGER_BABYBOY = 0x02020300,
+  VOICE_CHANGER_BABYBOY = 0x00000002,
   /**
-   * 0x02020500: The voice of a little girl.
+   * 0x00000003: The voice of a little girl.
    */
-  VOICE_CHANGER_BABYGIRL = 0x02020500,
+  VOICE_CHANGER_BABYGIRL = 0x00000003,
   /**
-   * 0x02020600: The voice of Zhu Bajie, a character in *Journey to the West*
+   * 0x00000004: The voice of Zhu Bajie, a character in *Journey to the West*
    * who has a voice like that of a growling bear.
    */
-  VOICE_CHANGER_ZHUBAJIE = 0x02020600,
+  VOICE_CHANGER_ZHUBAJIE = 0x00000004,
   /**
-   * 0x02010700: The ethereal voice.
+   * 0x00000005: The ethereal voice.
    */
-  VOICE_CHANGER_ETHEREAL = 0x02010700,
+  VOICE_CHANGER_ETHEREAL = 0x00000005,
   /**
-   * 0x02020700: The voice of Hulk.
+   * 0x00000006: The voice of Hulk.
    */
-  VOICE_CHANGER_HULK = 0x02020700,
+  VOICE_CHANGER_HULK = 0x00000006,
   /**
-   * 0x01030100: A more vigorous voice.
+   * 0x00100001: A more vigorous voice.
    */
-  VOICE_BEAUTY_VIGOROUS = 0x01030100,
+  VOICE_BEAUTY_VIGOROUS = 0x00100001,
   /**
-   * 0x01030200: A deeper voice.
+   * 0x00100002: A deeper voice.
    */
-  VOICE_BEAUTY_DEEP = 0x01030200,
+  VOICE_BEAUTY_DEEP = 0x00100002,
   /**
-   * 0x01030300: A mellower voice.
+   * 0x00100003: A mellower voice.
    */
-  VOICE_BEAUTY_MELLOW = 0x01030300,
+  VOICE_BEAUTY_MELLOW = 0x00100003,
   /**
-   * 0x01030400: Falsetto.
+   * 0x00100004: Falsetto.
    */
-  VOICE_BEAUTY_FALSETTO = 0x01030400,
+  VOICE_BEAUTY_FALSETTO = 0x00100004,
   /**
-   * 0x01030500: A fuller voice.
+   * 0x00100005: A fuller voice.
    */
-  VOICE_BEAUTY_FULL = 0x01030500,
+  VOICE_BEAUTY_FULL = 0x00100005,
   /**
-   * 0x01030600: A clearer voice.
+   * 0x00100006: A clearer voice.
    */
-  VOICE_BEAUTY_CLEAR = 0x01030600,
+  VOICE_BEAUTY_CLEAR = 0x00100006,
   /**
-   * 0x01030700: A more resounding voice.
+   * 0x00100007: A more resounding voice.
    */
-  VOICE_BEAUTY_RESOUNDING = 0x01030700,
+  VOICE_BEAUTY_RESOUNDING = 0x00100007,
   /**
-   * 0x01030800: A more ringing voice.
+   * 0x00100008: A more ringing voice.
    */
-  VOICE_BEAUTY_RINGING = 0x01030800,
+  VOICE_BEAUTY_RINGING = 0x00100008,
   /**
-   * 0x02010600: A more spatially resonant voice.
+   * 0x00100009: A more spatially resonant voice.
    */
-  VOICE_BEAUTY_SPACIAL = 0x02010600,
+  VOICE_BEAUTY_SPACIAL = 0x00100009,
   /**
-   * 0x01010100: (For male only) A more magnetic voice. Do not use it when
+   * 0x00200001: (For male only) A more magnetic voice. Do not use it when
    * the speaker is a female; otherwise, voice distortion occurs.
    */
-  GENERAL_BEAUTY_VOICE_MALE = 0x01010100,
+  GENERAL_BEAUTY_VOICE_MALE = 0x00200001,
   /**
-   * 0x01010200: (For female only) A fresher voice. Do not use it when
+   * 0x00200002: (For female only) A fresher voice. Do not use it when
    * the speaker is a male; otherwise, voice distortion occurs.
    */
-  GENERAL_BEAUTY_VOICE_FEMALE_FRESH = 0x01010200,
+  GENERAL_BEAUTY_VOICE_FEMALE_FRESH = 0x00200002,
   /**
-   * 0x01010300: (For female only) A more vital voice. Do not use it when the
+   * 0x00200003: (For female only) A more vital voice. Do not use it when the
    * speaker is a male; otherwise, voice distortion occurs.
    */
-  GENERAL_BEAUTY_VOICE_FEMALE_VITALITY = 0x01010300
+  GENERAL_BEAUTY_VOICE_FEMALE_VITALITY = 0x00200003
 };
 
 enum AREA_CODE {
-    AREA_CODE_CN = (1 << 0),
-    AREA_CODE_NA = (1 << 1),
-    AREA_CODE_EUR = (1 << 2),
-    AREA_CODE_AS = (1 << 3),
-    AREA_CODE_GLOBAL = (0xFFFFFFFF)
+    AREA_CODE_CN = 0x00000001,
+    AREA_CODE_NA = 0x00000002,
+    AREA_CODE_EUR = 0x00000004,
+    AREA_CODE_AS = 0x00000008,
+    AREA_CODE_JAPAN = 0x00000010,
+    AREA_CODE_INDIA = 0x00000020,
+    AREA_CODE_GLOBAL = 0xFFFFFFFF
+};
+
+enum AREA_CODE_EX {
+    /**
+     * Oceania
+    */
+    AREA_CODE_OC = 0x00000040,
+    /**
+     * South-American
+    */
+    AREA_CODE_SA = 0x00000080,
+    /**
+     * Africa
+    */
+    AREA_CODE_AF = 0x00000100,
+    /**
+     * The global area (except China)
+     */
+    AREA_CODE_OVS = 0xFFFFFFFE
+};
+
+enum CHANNEL_MEDIA_RELAY_ERROR {
+  /** 0: The state is normal.
+    */
+  RELAY_OK = 0,
+  /** 1: An error occurs in the server response.
+    */
+  RELAY_ERROR_SERVER_ERROR_RESPONSE = 1,
+  /** 2: No server response. You can call the
+    * \ref agora::rtc::IRtcEngine::leaveChannel "leaveChannel" method to
+    * leave the channel.
+    */
+  RELAY_ERROR_SERVER_NO_RESPONSE = 2,
+  /** 3: The SDK fails to access the service, probably due to limited
+    * resources of the server.
+    */
+  RELAY_ERROR_NO_RESOURCE_AVAILABLE = 3,
+  /** 4: Fails to send the relay request.
+    */
+  RELAY_ERROR_FAILED_JOIN_SRC = 4,
+  /** 5: Fails to accept the relay request.
+    */
+  RELAY_ERROR_FAILED_JOIN_DEST = 5,
+  /** 6: The server fails to receive the media stream.
+    */
+  RELAY_ERROR_FAILED_PACKET_RECEIVED_FROM_SRC = 6,
+  /** 7: The server fails to send the media stream.
+    */
+  RELAY_ERROR_FAILED_PACKET_SENT_TO_DEST = 7,
+  /** 8: The SDK disconnects from the server due to poor network
+    * connections. You can call the \ref agora::rtc::IRtcEngine::leaveChannel
+    * "leaveChannel" method to leave the channel.
+    */
+  RELAY_ERROR_SERVER_CONNECTION_LOST = 8,
+  /** 9: An internal error occurs in the server.
+    */
+  RELAY_ERROR_INTERNAL_ERROR = 9,
+  /** 10: The token of the source channel has expired.
+    */
+  RELAY_ERROR_SRC_TOKEN_EXPIRED = 10,
+  /** 11: The token of the destination channel has expired.
+    */
+  RELAY_ERROR_DEST_TOKEN_EXPIRED = 11,
+};
+
+//callback event
+enum CHANNEL_MEDIA_RELAY_EVENT {
+  /** 0: The user disconnects from the server due to poor network
+    * connections.
+    */
+  RELAY_EVENT_NETWORK_DISCONNECTED = 0,
+  /** 1: The network reconnects.
+    */
+  RELAY_EVENT_NETWORK_CONNECTED = 1,
+  /** 2: The user joins the source channel.
+    */
+  RELAY_EVENT_PACKET_JOINED_SRC_CHANNEL = 2,
+  /** 3: The user joins the destination channel.
+    */
+  RELAY_EVENT_PACKET_JOINED_DEST_CHANNEL = 3,
+  /** 4: The SDK starts relaying the media stream to the destination channel.
+    */
+  RELAY_EVENT_PACKET_SENT_TO_DEST_CHANNEL = 4,
+  /** 5: The server receives the video stream from the source channel.
+    */
+  RELAY_EVENT_PACKET_RECEIVED_VIDEO_FROM_SRC = 5,
+  /** 6: The server receives the audio stream from the source channel.
+    */
+  RELAY_EVENT_PACKET_RECEIVED_AUDIO_FROM_SRC = 6,
+  /** 7: The destination channel is updated.
+    */
+  RELAY_EVENT_PACKET_UPDATE_DEST_CHANNEL = 7,
+  /** 8: The destination channel update fails due to internal reasons.
+    */
+  RELAY_EVENT_PACKET_UPDATE_DEST_CHANNEL_REFUSED = 8,
+  /** 9: The destination channel does not change, which means that the
+    * destination channel fails to be updated.
+    */
+  RELAY_EVENT_PACKET_UPDATE_DEST_CHANNEL_NOT_CHANGE = 9,
+  /** 10: The destination channel name is NULL.
+    */
+  RELAY_EVENT_PACKET_UPDATE_DEST_CHANNEL_IS_NULL = 10,
+  /** 11: The video profile is sent to the server.
+    */
+  RELAY_EVENT_VIDEO_PROFILE_UPDATE = 11,
+};
+
+enum CHANNEL_MEDIA_RELAY_STATE {
+  /** 0: The SDK is initializing.
+    */
+  RELAY_STATE_IDLE = 0,
+  /** 1: The SDK tries to relay the media stream to the destination channel.
+    */
+  RELAY_STATE_CONNECTING = 1,
+  /** 2: The SDK successfully relays the media stream to the destination
+    * channel.
+    */
+  RELAY_STATE_RUNNING = 2,
+  /** 3: A failure occurs. See the details in code.
+    */
+  RELAY_STATE_FAILURE = 3,
+};
+
+/** The definition of ChannelMediaInfo.
+ */
+struct ChannelMediaInfo {
+    /** The channel name. The default value is NULL, which means that the SDK
+     * applies the current channel name.
+     */
+	const char* channelName;
+    /** The token that enables the user to join the channel. The default value
+     * is NULL, which means that the SDK applies the current token.
+     */
+	const char* token;
+    /** The user ID.
+     */
+	uid_t uid;
+};
+
+/** The definition of ChannelMediaRelayConfiguration.
+ */
+struct ChannelMediaRelayConfiguration {
+    /** Pointer to the source channel: ChannelMediaInfo.
+     *
+     * @note
+     * - `uid`: ID of the user whose media stream you want to relay. We
+     * recommend setting it as 0, which means that the SDK relays the media
+     * stream of the current broadcaster.
+     * - If you do not use a token, we recommend using the default values of
+     * the parameters in ChannelMediaInfo.
+     * - If you use a token, set uid as 0, and ensure that the token is
+     * generated with the uid set as 0.
+     */
+	ChannelMediaInfo *srcInfo;
+    /** Pointer to the destination channel: ChannelMediaInfo. If you want to
+     * relay the media stream to multiple channels, define as many
+     * ChannelMediaInfo structs (at most four).
+     *
+     * @note `uid`: ID of the user who is in the source channel.
+     */
+	ChannelMediaInfo *destInfos;
+    /** The number of destination channels. The default value is 0, and the
+     * value range is [0,4). Ensure that the value of this parameter
+     * corresponds to the number of ChannelMediaInfo structs you define in
+     * `destInfos`.
+     */
+	int destCount;
+
+	ChannelMediaRelayConfiguration()
+			: srcInfo(nullptr)
+			, destInfos(nullptr)
+			, destCount(0)
+	{}
 };
 
 /**
@@ -3330,9 +4043,78 @@ struct NetworkInfo {
 
   NetworkInfo() : video_encoder_target_bitrate_bps(0) {}
 
-  bool operator==(const NetworkInfo& rhs) {
-    return (video_encoder_target_bitrate_bps == rhs.video_encoder_target_bitrate_bps);
+  bool operator==(const NetworkInfo& rhs) const {
+    return (rhs.video_encoder_target_bitrate_bps == video_encoder_target_bitrate_bps);
   }
+};
+
+/** Encryption mode.
+*/
+enum ENCRYPTION_MODE {
+  /** 1: (Default) 128-bit AES encryption, XTS mode.
+   */
+  AES_128_XTS = 1,
+  /** 2: 128-bit AES encryption, ECB mode.
+   */
+  AES_128_ECB = 2,
+  /** 3: 256-bit AES encryption, XTS mode.
+   */
+  AES_256_XTS = 3,
+  /** 4: 128-bit SM4 encryption, ECB mode.
+   */
+  SM4_128_ECB = 4,
+  /** Enumerator boundary.
+   */
+  MODE_END,
+};
+
+/** Configurations of built-in encryption schemas. */
+struct EncryptionConfig {
+  /**
+   * Encryption mode. The default encryption mode is `AES_128_XTS`. See #ENCRYPTION_MODE.
+   */
+  ENCRYPTION_MODE encryptionMode;
+  /**
+   * Encryption key in string type.
+   *
+   * @note If you do not set an encryption key or set it as NULL, you cannot use the built-in encryption, and the SDK returns #ERR_INVALID_ARGUMENT (-2).
+   */
+  const char* encryptionKey;
+
+  EncryptionConfig() : encryptionMode(AES_128_XTS),
+                       encryptionKey(NULL) {}
+
+  /// @cond
+  const char* getEncryptionString() const {
+    switch(encryptionMode) {
+      case AES_128_XTS:
+        return "aes-128-xts";
+      case AES_128_ECB:
+        return "aes-128-ecb";
+      case AES_256_XTS:
+        return "aes-256-xts";
+      case SM4_128_ECB:
+        return "sm4-128-ecb";
+      default:
+        return "aes-128-xts";
+    }
+  }
+  /// @endcond
+};
+
+/** Encryption error type.
+ */
+enum ENCRYPTION_ERROR_TYPE {
+    ENCRYPTION_ERROR_INTERNAL_FAILURE = 0,
+    ENCRYPTION_ERROR_DECRYPTION_FAILURE = 1,
+    ENCRYPTION_ERROR_ENCRYPTION_FAILURE = 2,
+};
+
+/** Type of permission.
+ */
+enum PERMISSION_TYPE {
+    RECORD_AUDIO = 0,
+    CAMERA = 1,
 };
 
 }  // namespace rtc
@@ -3359,6 +4141,15 @@ class AParameter : public agora::util::AutoPtr<IAgoraParameter> {
   }
 };
 
+class LicenseCallback {
+  public:
+    virtual ~LicenseCallback() {}
+    virtual void onCertificateRequired() = 0;
+    virtual void onLicenseRequest() = 0;
+    virtual void onLicenseValidated() = 0;
+    virtual void onLicenseError(int result) = 0;
+};
+
 }  // namespace base
 
 }  // namespace agora
@@ -3378,3 +4169,48 @@ AGORA_API const char* AGORA_CALL getAgoraSdkVersion(int* build);
 AGORA_API const char* AGORA_CALL getAgoraSdkErrorDescription(int err);
 
 AGORA_API int AGORA_CALL setAgoraSdkExternalSymbolLoader(void* (*func)(const char* symname));
+
+/**
+ * Generate credential
+ * @param [in, out] credential_buf The content of the credential.
+ * @return The description of the error code.
+ * @note For license only, everytime will generate a different credential.
+ * So, just need to call once for a device, and then save the credential
+ */
+AGORA_API int AGORA_CALL createAgoraCredential(agora::util::AString &credential);
+
+/**
+ * Verify given certificate and return the result
+ * When you receive onCertificateRequired event, you must validate the certificate by calling
+ * this function. This is sync call, and if validation is success, it will return ERR_OK. And
+ * if failed to pass validation, you won't be able to joinChannel and ERR_CERT_FAIL will be
+ * returned.
+ * @param [in] credential_buf pointer to the credential's content.
+ * @param [in] credential_len the length of the credential's content.
+ * @param [in] certificate_buf pointer to the certificate's content.
+ * @param [in] certificate_len the length of the certificate's content.
+ * @return The description of the error code.
+ * @note For license only.
+ */
+AGORA_API int AGORA_CALL getAgoraCertificateVerifyResult(const char *credential_buf, int credential_len,
+    const char *certificate_buf, int certificate_len);
+
+/**
+ * @brief Implement the agora::base::LicenseCallback,
+ * create a LicenseCallback object to receive callbacks of license.
+ *
+ * @param [in] callback The object of agora::LiceseCallback,
+ *                      set the callback to null before delete it.
+ * @return none
+ */
+AGORA_API void setAgoraLicenseCallback(agora::base::LicenseCallback *callback);
+
+/**
+ * @brief Get the LicenseCallback pointer if already setup,
+ *  otherwise, return null.
+ *
+ * @param none
+ * @return a pointer of agora::base::LicenseCallback
+ */
+
+AGORA_API agora::base::LicenseCallback* getAgoraLicenseCallback();

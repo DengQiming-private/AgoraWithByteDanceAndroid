@@ -37,10 +37,12 @@ class IVideoFrame : public RefCountInterface {
   enum class Format {
     kUnknown,
     kI420,
+    kI420A,
     kI422,
     kNV21,
     kNV12,
     kRGBA,
+    kARGB,
     kBGRA
   };
 
@@ -138,7 +140,9 @@ class IVideoFrame : public RefCountInterface {
   // Reserved for future Texture data path.
   // Expect to change when hardware video frame path is established.
   struct TextureId {
-    uintptr_t id_ = 0;
+    uintptr_t id_;
+
+    TextureId() : id_(0) {}
   };
 
   /**
