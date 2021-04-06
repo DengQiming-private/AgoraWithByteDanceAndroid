@@ -54,7 +54,7 @@ public void onEvent(String vendor, String key, String value) {
 // Android
 mRtcEngine.setExtensionProperty(VIDEO_SOURCE_CAMERA_PRIMARY, ExtensionManager.VENDOR_NAME_VIDEO, "key", "value");
 ```
-其中：
+
 3.1 MediaSourceType
 当插件的类型为 LOCAL_VIDEO_FILTER 时，可使用 MediaSourceType 中的 VIDEO_SOURCE 相关类型
 当插件的类型为 LOCAL_AUDIO_FILTER 时，现阶段只支持 MediaSourceType 中的 AUDIO_SOURCE_MICROPHONE 类型

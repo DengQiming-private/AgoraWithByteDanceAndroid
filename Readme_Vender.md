@@ -25,7 +25,9 @@ enum PROVIDER_TYPE {
 ```
 
 当前SDK版本仅支持 LOCAL_VIDEO_FILTER、REMOTE_VIDEO_FILTER 和 LOCAL_AUDIO_FILTER 三种类型
+
 当 getProviderType() 返回值为 LOCAL_VIDEO_FILTER/REMOTE_VIDEO_FILTER 时，该 provider 加载时 createVideoFilter() 方法会被调用，需要返回如下第2节介绍的 IVideoFilter 实例
+
 当 getProviderType() 返回值为 LOCAL_AUDIO_FILTER 时，该 provider 加载时 createAudioFilter() 方法会被调用，需要返回如下第3节介绍的 IAudioFilter 实例
 
 1.2 IExtensionControl 用于触发回调事件 & log能力
@@ -51,7 +53,7 @@ public:
   virtual size_t getProperty(const char* key, void* buf, size_t buf_size);
 };
 ```
-其中:
+
 2.1 adaptVideoFrame函数通过处理 capturedFrame，返回 adaptedFrame，提供了 video 类型插件的核心功能
 
 ### 3. 实现agora::rtc::IAudioFilter接口
@@ -68,7 +70,7 @@ public:
   virtual const char * getName();
 };
 ```
-其中:
+
 3.1 adaptAudioFrame函数通过处理 inAudioFrame，返回 adaptedFrame，提供了 audio 类型插件的核心功能
 
 # Java部分
