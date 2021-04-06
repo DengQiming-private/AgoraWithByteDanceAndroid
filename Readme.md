@@ -1,3 +1,10 @@
+# 字节 plugin 简介
+该 demo app 用于展示在 Agora SDK 中加载 IVideoFilter/IAudioFilter 类型的插件，主要功能包括
+
+1. IVideoFilter -- 将 “字节火山引擎” 封装为 Agora SDK 的 IVideoFilter 类型的插件，并提供人脸检测、美颜、添加道具等功能，demo app主界面下方的按钮可以 Enable/Disable该功能
+
+2. IAudioFilter -- Agora SDK team 封装了一个简易的 IAudioFilter 类型的插件，提供调节本地采集的麦克风音量的功能，demo app主界面下方的滑动条可以用于调节音量
+
 # 字节 plugin 的使用方法
 ### 1. 将所需相关依赖文件放到指定目录
 |依赖文件|存放路径|
@@ -56,7 +63,9 @@ mRtcEngine.setExtensionProperty(VIDEO_SOURCE_CAMERA_PRIMARY, ExtensionManager.VE
 ```
 
 3.1 MediaSourceType
+
 当插件的类型为 LOCAL_VIDEO_FILTER 时，可使用 MediaSourceType 中的 VIDEO_SOURCE 相关类型
+
 当插件的类型为 LOCAL_AUDIO_FILTER 时，现阶段只支持 MediaSourceType 中的 AUDIO_SOURCE_MICROPHONE 类型
 
 3.2 字节美颜插件的参数解释如下
