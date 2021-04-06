@@ -18,22 +18,30 @@ RtcEngineConfig config = new RtcEngineConfig();
 config.mContext = this;
 config.mAppId = appId;
 //通过插件提供的接口获取native provider句柄
-long provider = ExtensionManager.nativeGetExtensionProvider(this); 
-//注册native provider句柄，其中：vender用于区分不同的插件，observer用于监听该插件的消息
-config.addExtensionProvider(ExtensionManager.VENDOR_NAME, provider, this); 
+long videoProvider = ExtensionManager.nativeGetExtensionProvider(this, ExtensionManager.VENDOR_NAME_VIDEO,
+		ExtensionManager.PROVIDER_TYPE.LOCAL_VIDEO_FILTER.ordinal());
+long audioProvider = ExtensionManager.nativeGetExtensionProvider(this, ExtensionManager.VENDOR_NAME_AUDIO,
+		ExtensionManager.PROVIDER_TYPE.LOCAL_AUDIO_FILTER.ordinal());
+//可添加一个或多个native provider句柄，其中 VENDOR_NAME 用于区分不同的插件
+config.addExtension(ExtensionManager.VENDOR_NAME_VIDEO, videoProvider);
+config.addExtension(ExtensionManager.VENDOR_NAME_AUDIO, audioProvider);
+//observer用于监听插件上报的消息
+config.mExtensionObserver = this;
 ......
+//创建RtcEngine
 mRtcEngine = RtcEngine.create(config);
-//enable插件
-mRtcEngine.enableExtension(ExtensionManager.VENDOR_NAME, true);
+......
+//加入频道
+mRtcEngine.joinChannel("", channelName, "", 0);
 ```
 
-2.1 addExtensionProvider可多次调用，以注册多个插件（需使用不同的VENDOR_NAME）
+2.1 addExtensionProvider可多次调用，以注册多个插件（需使用不同的 VENDOR_NAME）
 
 2.2 注册插件的消息回调需要实现 io.agora.rtc2.IMediaExtensionObserver 的 onEvent 接口
 ```
 @Override
 public void onEvent(String vendor, String key, String value) {
-//vendor即为上述注册插件时的VENDOR_NAME，key/value是插件消息的键值对
+//vendor即为上述注册插件时的 VENDOR_NAME，key/value是插件消息的键值对
 ......
 }
 ```
@@ -44,10 +52,14 @@ public void onEvent(String vendor, String key, String value) {
 
 ```
 // Android
-ExtensionManager.nativeSetParameters(jsonString)
+mRtcEngine.setExtensionProperty(VIDEO_SOURCE_CAMERA_PRIMARY, ExtensionManager.VENDOR_NAME_VIDEO, "key", "value");
 ```
+其中：
+3.1 MediaSourceType
+当插件的类型为 LOCAL_VIDEO_FILTER 时，可使用 MediaSourceType 中的 VIDEO_SOURCE 相关类型
+当插件的类型为 LOCAL_AUDIO_FILTER 时，现阶段只支持 MediaSourceType 中的 AUDIO_SOURCE_MICROPHONE 类型
 
-参数解释如下
+3.2 字节美颜插件的参数解释如下
 
 ```
 {

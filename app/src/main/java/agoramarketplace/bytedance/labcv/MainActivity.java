@@ -35,8 +35,6 @@ import io.agora.rtc2.RtcEngineConfig;
 import io.agora.rtc2.video.VideoCanvas;
 import io.agora.rtc2.video.VideoEncoderConfiguration;
 
-import static io.agora.rtc2.Constants.VideoSourceType.VIDEO_SOURCE_CAMERA_PRIMARY;
-
 
 public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.OnUtilsAsyncTaskEvents, io.agora.rtc2.IMediaExtensionObserver {
 
@@ -131,7 +129,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                mRtcEngine.setExtensionProperty(VIDEO_SOURCE_CAMERA_PRIMARY, ExtensionManager.VENDOR_NAME, "volume", ""+i);
+                mRtcEngine.setExtensionProperty(Constants.MediaSourceType.AUDIO_SOURCE_MICROPHONE, ExtensionManager.VENDOR_NAME_AUDIO, "volume", ""+i);
             }
 
             @Override
@@ -160,9 +158,13 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             RtcEngineConfig config = new RtcEngineConfig();
             config.mContext = this;
             config.mAppId = appId;
-            long provider = ExtensionManager.nativeGetExtensionProvider(this, ExtensionManager.VENDOR_NAME);
-            Log.d(TAG, "Extension provider: " + provider);
-            config.addExtension(ExtensionManager.VENDOR_NAME, provider);
+            long videoProvider = ExtensionManager.nativeGetExtensionProvider(this, ExtensionManager.VENDOR_NAME_VIDEO,
+                    ExtensionManager.PROVIDER_TYPE.LOCAL_VIDEO_FILTER.ordinal());
+            long audioProvider = ExtensionManager.nativeGetExtensionProvider(this, ExtensionManager.VENDOR_NAME_AUDIO,
+                    ExtensionManager.PROVIDER_TYPE.LOCAL_AUDIO_FILTER.ordinal());
+            Log.d(TAG, "Extension provider video: " + videoProvider + " audio: " + audioProvider);
+            config.addExtension(ExtensionManager.VENDOR_NAME_VIDEO, videoProvider);
+            config.addExtension(ExtensionManager.VENDOR_NAME_AUDIO, audioProvider);
             config.mExtensionObserver = this;
             config.mEventHandler = new IRtcEngineEventHandler() {
                 @Override
@@ -206,6 +208,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
                 }
             };
             mRtcEngine = RtcEngine.create(config);
+            //extension is enabled by default
 //            mRtcEngine.enableExtension(ExtensionManager.VENDOR_NAME, true);
             setupLocalVideo();
             VideoEncoderConfiguration configuration = new VideoEncoderConfiguration(640, 360,
@@ -316,7 +319,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
 //            arr.put(node4);
             o.put("plugin.bytedance.ai.composer.nodes", arr);
 
-            mRtcEngine.setExtensionProperty(VIDEO_SOURCE_CAMERA_PRIMARY, ExtensionManager.VENDOR_NAME, "key", o.toString());
+            mRtcEngine.setExtensionProperty(Constants.MediaSourceType.VIDEO_SOURCE_CAMERA_PRIMARY, ExtensionManager.VENDOR_NAME_VIDEO, "key", o.toString());
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -329,7 +332,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             o.put("plugin.bytedance.faceAttributeEnabled", false);
             o.put("plugin.bytedance.faceStickerEnabled", false);
             o.put("plugin.bytedance.handDetectEnabled", false);
-            mRtcEngine.setExtensionProperty(VIDEO_SOURCE_CAMERA_PRIMARY, ExtensionManager.VENDOR_NAME, "key", o.toString());
+            mRtcEngine.setExtensionProperty(Constants.MediaSourceType.VIDEO_SOURCE_CAMERA_PRIMARY, ExtensionManager.VENDOR_NAME_VIDEO, "key", o.toString());
         } catch (JSONException e) {
             e.printStackTrace();
         }
