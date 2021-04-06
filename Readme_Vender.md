@@ -71,7 +71,9 @@ public:
 };
 ```
 
-3.1 adaptAudioFrame函数通过处理 inAudioFrame，返回 adaptedFrame，提供了 audio 类型插件的核心功能
+3.1 adaptAudioFrame 函数通过处理 inAudioFrame，返回 adaptedFrame，提供了 audio 类型插件的核心功能
+
+3.2 现阶段受架构所限，getName 函数需要返回正确的 VENDOR_NAME，今后将会移除该函数
 
 # Java部分
 ### 4. 指定一个类加载 native 库（.so文件），并在该类中提供 nativeGetExtensionProvider 方法以获取 native provider
