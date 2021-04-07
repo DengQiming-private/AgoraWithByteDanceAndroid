@@ -41,7 +41,6 @@ namespace agora {
         }
 
         void ExtensionVideoFilter::setEnabled(bool enable) {
-            int a = 10;
         }
 
         bool ExtensionVideoFilter::isEnabled() {
