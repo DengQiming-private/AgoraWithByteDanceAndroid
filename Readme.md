@@ -1,5 +1,5 @@
 # Introduction
-This demo app is used to show how to load IVideoFilter/IAudioFilter type plug-ins in the Agora SDK. The main functions include
+This demo app is used to show how to load `IVideoFilter/IAudioFilter` type plug-ins in the Agora SDK. The main functions include
 
 1. IVideoFilter -- Encapsulate `ByteDance VolcanoEngine` as Agora SDK's `IVideoFilter` type plug-in, and provide functions such as face detection, beautification, and addition of props. The button at the bottom of the main interface of the demo app can enable/disable this function.
 
@@ -14,7 +14,7 @@ This demo app is used to show how to load IVideoFilter/IAudioFilter type plug-in
 |32bit libagora-rtc-sdk-jni.so|AgoraWithByteDanceAndroid\app\src\main\jniLibs\armeabi-v7a|
 |64bit libeffect.so|AgoraWithByteDanceAndroid\agora-bytedance\src\main\jniLibs\arm64-v8a|
 |32bit libeffect.so|AgoraWithByteDanceAndroid\agora-bytedance\src\main\jniLibs\armeabi-v7a|
-|ByteDance VolcanoEngine resource|AgoraWithByteDanceAndroid\agora-bytedance\src\main\assets|
+|ByteDance resource package|AgoraWithByteDanceAndroid\agora-bytedance\src\main\assets|
 
 ### 2. Use RtcEngine create(RtcEngineConfig config) to initialize
 ```
@@ -36,16 +36,16 @@ config.addExtension(ExtensionManager.VENDOR_NAME_AUDIO, audioProvider);
 //Observer is used to monitor the messages reported by the plug-in
 config.mExtensionObserver = this;
 ......
-//create RtcEngine
+//Create RtcEngine
 mRtcEngine = RtcEngine.create(config);
 ......
-//join channel
+//Join channel
 mRtcEngine.joinChannel("", channelName, "", 0);
 ```
 
 2.1 addExtensionProvider can be called multiple times to register multiple plug-ins (different VENDOR_NAME is required)
 
-2.2 The io.agora.rtc2.IMediaExtensionObserver#onEvent interface needs to be implemented to receive the message callback of the registered plug-in
+2.2 The `io.agora.rtc2.IMediaExtensionObserver#onEvent` interface needs to be implemented to receive the message callback of the registered plug-in
 ```
 @Override
 public void onEvent(String vendor, String key, String value) {
