@@ -1,5 +1,7 @@
-# native部分
-### 1. 实现agora::rtc::IExtensionProvider接口
+# SDK
+
+### 1. Implement agora::rtc::IExtensionProvider
+
 ```
 class IExtensionProvider {
 public:
@@ -11,7 +13,8 @@ public:
 };
 ```
 
-1.1 PROVIDER_TYPE 是指插件在 video pipeline 中的位置，定义如下：
+1.1 PROVIDER_TYPE defines the position of the video filter plugin in the pipeline:
+
 ```
 enum PROVIDER_TYPE {
   LOCAL_AUDIO_FILTER,
@@ -24,13 +27,19 @@ enum PROVIDER_TYPE {
 };
 ```
 
-当前SDK版本仅支持 LOCAL_VIDEO_FILTER、REMOTE_VIDEO_FILTER 和 LOCAL_AUDIO_FILTER 三种类型
+The SDK only supports the following three provider types:
+- `LOCAL_VIDEO_FILTER`
+- `REMOTE_VIDEO_FILTER`
+- `LOCAL_AUDIO_FILTER`
 
-当 getProviderType() 返回值为 LOCAL_VIDEO_FILTER/REMOTE_VIDEO_FILTER 时，该 provider 加载时 createVideoFilter() 方法会被调用，需要返回如下第2节介绍的 IVideoFilter 实例
+If you set the return value of `getProviderType()` as `LOCAL_VIDEO_FILTER` or `REMOTE_VIDEO_FILTER`, after the customer creates the `IExtensionProvider` object when initializing `RtcEngine`, the SDK calls
+the `createVideoFilter()` method, and you need to return the `IVideoFilter` instance as described in Step 2.
 
-当 getProviderType() 返回值为 LOCAL_AUDIO_FILTER 时，该 provider 加载时 createAudioFilter() 方法会被调用，需要返回如下第3节介绍的 IAudioFilter 实例
+If you set the return value of `getProviderType()` as `LOCAL_AUDIO_FILTER`, after the customer creates the `IExtensionProvider` object when initializing `RtcEngine`, the SDK calls
+the `createAudioFilter()` method, and you need to return the `IAudioFilter` instance as described in Step 3.
 
-1.2 IExtensionControl 用于触发回调事件 & log能力
+1.2 Use IExtensionControl to trigger callback events and send logs
+
 ```
 void ByteDanceProcessor::dataCallback(const char* data){
   if (control_ != nullptr) {
@@ -38,9 +47,10 @@ void ByteDanceProcessor::dataCallback(const char* data){
   }
 }
 ```
-app层创建RtcEngine时注册的 IMediaExtensionObserver 实例会收到此消息，详见Readme.md中的第2节
 
-### 2. 实现agora::rtc::IVideoFilter接口
+When the customer registers the `IMediaExtensionObserver` object when initializing RtcEngine, the app receives this event. 
+
+### 2. Implement agora::rtc::IVideoFilter
 
 ```
 class IVideoFilter {
@@ -54,9 +64,9 @@ public:
 };
 ```
 
-2.1 adaptVideoFrame函数通过处理 capturedFrame，返回 adaptedFrame，提供了 video 类型插件的核心功能
+2.1 The `adaptVideoFrame` method is the core method of `IVideoFilter`. It processes video frames in `capturedFrame` and returns the processed frames in `adaptedFrame`.
 
-### 3. 实现agora::rtc::IAudioFilter接口
+### 3. Implement agora::rtc::IAudioFilter
 
 ```
 class IAudioFilter {
@@ -71,12 +81,14 @@ public:
 };
 ```
 
-3.1 adaptAudioFrame 函数通过处理 inAudioFrame，返回 adaptedFrame，提供了 audio 类型插件的核心功能
+3.1 The `adaptAudioFrame` method is the core method of `IAudioFilter`. It processes audio frames in `inAudioFrame` and returns the processed frames in `adaptedFrame`.
 
-3.2 现阶段受架构所限，getName 函数需要返回正确的 VENDOR_NAME，今后将会移除该函数
+3.2 You need to specify the VENDOR_NAME in the return value of `getName`.
 
-# Java部分
-### 4. 指定一个类加载 native 库（.so文件），并在该类中提供 nativeGetExtensionProvider 方法以获取 native provider
+# Java native
+
+### 4. Specify a native library (.so file) as the class loader and use the `nativeGetExtensionProvider` method in the class to get the native provider.
+
 ```
 public class ExtensionManager {
   public static final String VENDOR_NAME = "ByteDance";
