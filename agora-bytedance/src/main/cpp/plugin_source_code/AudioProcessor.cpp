@@ -29,8 +29,8 @@ namespace agora {
         }
 
         void AdjustVolumeAudioProcessor::dataCallback(const char* data){
-            if (control_ != nullptr) {
-                control_->fireEvent(id_, "volume", data);
+            if (control_) {
+                control_->postEvent("volume", data);
             }
         }
     }

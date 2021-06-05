@@ -10,7 +10,7 @@
 #include <mutex>
 #include <vector>
 #include <AgoraRtcKit/AgoraRefPtr.h>
-#include <AgoraRtcKit/NGIAgoraExtensionControl.h>
+#include "AgoraRtcKit/NGIAgoraMediaNode.h"
 
 #include "AgoraRtcKit/AgoraMediaBase.h"
 #include "../bytedance/bef_effect_ai_api.h"
@@ -27,7 +27,7 @@ namespace agora {
 
             bool releaseOpenGL();
 
-            int processFrame(const agora::media::base::VideoFrame &capturedFrame);
+            int processFrame(agora::rtc::VideoFrameInfo &capturedFrame);
 
             int releaseEffectEngine();
 
@@ -35,18 +35,11 @@ namespace agora {
 
             std::thread::id getThreadId();
 
-            int setExtensionControl(agora::rtc::IExtensionControl* control){
+            int setExtensionControl(agora::agora_refptr<rtc::IExtensionVideoFilter::Control> control){
                 control_ = control;
                 return 0;
             };
 
-            int setExtensionVendor(const char* id){
-                int len = std::string(id).length() + 1;
-                id_ = static_cast<char *>(malloc(len));
-                memset(id_, 0, len);
-                strcpy(id_, id);
-                return 0;
-            };
         protected:
             ~ByteDanceProcessor() {}
         private:
@@ -54,8 +47,8 @@ namespace agora {
             void processFaceDetect();
             void processHandDetect();
             void processLightDetect();
-            void processEffect(const agora::media::base::VideoFrame &capturedFrame);
-            void prepareCachedVideoFrame(const agora::media::base::VideoFrame &capturedFrame);
+            void processEffect(agora::rtc::VideoFrameInfo &capturedFrame);
+            void prepareCachedVideoFrame(agora::rtc::VideoFrameInfo &capturedFrame);
 
 #if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
             EglCore *eglCore_ = nullptr;
@@ -90,14 +83,12 @@ namespace agora {
             std::string lightDetectModelPath_;
             bef_effect_handle_t lightDetectHandler_ = nullptr;
 
-            agora::media::base::VideoFrame prevFrame_;
-            unsigned char* yuvBuffer_ = nullptr;
+            agora::rtc::VideoFrameInfo prevFrame_;
             unsigned char* rgbaBuffer_ = nullptr;
 
             bool faceStickerEnabled_ = false;
             std::string faceStickerItemPath_;
-            agora::rtc::IExtensionControl* control_;
-            char* id_;
+            agora::agora_refptr<rtc::IExtensionVideoFilter::Control> control_;
         };
     }
 }

@@ -10,8 +10,7 @@
 #include <mutex>
 #include <vector>
 #include <AgoraRtcKit/AgoraRefPtr.h>
-#include <AgoraRtcKit/NGIAgoraExtensionControl.h>
-
+#include "AgoraRtcKit/NGIAgoraMediaNode.h"
 #include "AgoraRtcKit/AgoraMediaBase.h"
 
 
@@ -26,21 +25,13 @@ namespace agora {
 
             void setVolume(int volume) { volume_ = volume / 100.0f; }
 
-            int setExtensionControl(agora::rtc::IExtensionControl* control){
+            int setExtensionControl(agora::agora_refptr<rtc::IExtensionVideoFilter::Control> control){
                 control_ = control;
                 return 0;
             };
 
-            int setVendorName(const char* id){
-                int len = std::string(id).length() + 1;
-                id_ = static_cast<char *>(malloc(len));
-                memset(id_, 0, len);
-                strcpy(id_, id);
-                return 0;
-            };
-
             char* getVendorName() {
-                return id_;
+                return "Agora";
             }
         protected:
             ~AdjustVolumeAudioProcessor() {}
@@ -48,8 +39,7 @@ namespace agora {
             static int16_t FloatS16ToS16(float v);
         private:
             std::atomic<float> volume_ = {1.0f};
-            agora::rtc::IExtensionControl* control_;
-            char* id_;
+            agora::agora_refptr<rtc::IExtensionVideoFilter::Control> control_;
         };
     }
 }

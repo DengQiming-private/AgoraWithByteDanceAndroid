@@ -36,5 +36,5 @@ public class ExtensionManager {
         }
     }
 
-    public static native long nativeGetExtensionProvider(Context context, String vendor, int type);
+    public static native long nativeGetExtensionProvider(Context context);
 }

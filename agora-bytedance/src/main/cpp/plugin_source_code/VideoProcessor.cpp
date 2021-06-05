@@ -57,44 +57,28 @@ namespace agora {
             return true;
         }
 
-        void ByteDanceProcessor::prepareCachedVideoFrame(const agora::media::base::VideoFrame &capturedFrame) {
-            int ysize = capturedFrame.yStride * capturedFrame.height;
-            int usize = capturedFrame.uStride * capturedFrame.height / 2;
-            int vsize = capturedFrame.vStride * capturedFrame.height / 2;
-            if (yuvBuffer_ == nullptr ||
-            rgbaBuffer_ == nullptr ||
-            prevFrame_.width != capturedFrame.width ||
-            prevFrame_.height != capturedFrame.height ||
-            prevFrame_.yStride != capturedFrame.yStride ||
-            prevFrame_.uStride != capturedFrame.uStride ||
-            prevFrame_.vStride != capturedFrame.vStride) {
-                if (yuvBuffer_) {
-                    free(yuvBuffer_);
-                    yuvBuffer_ = nullptr;
-                }
+        void ByteDanceProcessor::prepareCachedVideoFrame(agora::rtc::VideoFrameInfo &capturedFrame) {
+            int yStride = capturedFrame.width;
+            if (rgbaBuffer_ == nullptr ||
+                prevFrame_.width != capturedFrame.width ||
+                prevFrame_.height != capturedFrame.height) {
                 if (rgbaBuffer_) {
                     free(rgbaBuffer_);
                     rgbaBuffer_ = nullptr;
                 }
 
-                yuvBuffer_ = (unsigned char*)malloc(ysize + usize + vsize);
-                rgbaBuffer_ = (unsigned char*)malloc(capturedFrame.yStride * capturedFrame.height * 4);
+                rgbaBuffer_ = (unsigned char*)malloc(yStride * capturedFrame.height * 4);
             }
-            // update YUV buffer
-            memcpy(yuvBuffer_, capturedFrame.yBuffer, ysize);
-            memcpy(yuvBuffer_ + ysize, capturedFrame.uBuffer, usize);
-            memcpy(yuvBuffer_ + ysize + usize, capturedFrame.vBuffer, vsize);
 
             // update RGBA buffer
-            cvt_yuv2rgba(yuvBuffer_, rgbaBuffer_, BEF_AI_PIX_FMT_YUV420P, capturedFrame.width,
+            cvt_yuv2rgba(capturedFrame.memBuffer.data, rgbaBuffer_, BEF_AI_PIX_FMT_YUV420P, capturedFrame.width,
                          capturedFrame.height, capturedFrame.width, capturedFrame.height,
                          BEF_AI_CLOCKWISE_ROTATE_0,
                          false);
             prevFrame_ = capturedFrame;
-
         }
 
-        void ByteDanceProcessor::processEffect(const agora::media::base::VideoFrame &capturedFrame) {
+        void ByteDanceProcessor::processEffect(agora::rtc::VideoFrameInfo &capturedFrame) {
             if (!byteEffectHandler_) {
                 bef_effect_result_t ret;
                 ret = bef_effect_ai_create(&byteEffectHandler_);
@@ -174,28 +158,21 @@ namespace agora {
 
             ret = bef_effect_ai_algorithm_buffer(byteEffectHandler_, rgbaBuffer_,
                                                  BEF_AI_PIX_FMT_RGBA8888, capturedFrame.width,
-                                                 capturedFrame.height, capturedFrame.yStride * 4,
+                                                 capturedFrame.height, capturedFrame.width * 4,
                                                  timestamp);
             CHECK_BEF_AI_RET_SUCCESS(ret,
                                      "ByteDanceProcessor::updateEffect ai algorithm buffer failed %d",
                                      ret);
             ret = bef_effect_ai_process_buffer(byteEffectHandler_, rgbaBuffer_,
-                                               BEF_AI_PIX_FMT_RGBA8888, capturedFrame.yStride,
-                                               capturedFrame.height, capturedFrame.yStride * 4,
+                                               BEF_AI_PIX_FMT_RGBA8888, capturedFrame.width,
+                                               capturedFrame.height, capturedFrame.width * 4,
                                                rgbaBuffer_, BEF_AI_PIX_FMT_RGBA8888, timestamp);
             CHECK_BEF_AI_RET_SUCCESS(ret,
                                      "ByteDanceProcessor::updateEffect ai process buffer failed %d",
                                      ret);
 
-            cvt_rgba2yuv(rgbaBuffer_, yuvBuffer_, BEF_AI_PIX_FMT_YUV420P, capturedFrame.yStride,
+            cvt_rgba2yuv(rgbaBuffer_, capturedFrame.memBuffer.data, BEF_AI_PIX_FMT_YUV420P, capturedFrame.width,
                          capturedFrame.height);
-
-            int ysize = capturedFrame.yStride * capturedFrame.height;
-            int usize = capturedFrame.uStride * capturedFrame.height / 2;
-            int vsize = capturedFrame.vStride * capturedFrame.height / 2;
-            memcpy(capturedFrame.yBuffer, yuvBuffer_, ysize);
-            memcpy(capturedFrame.uBuffer, yuvBuffer_ + ysize, usize);
-            memcpy(capturedFrame.vBuffer, yuvBuffer_ + ysize + usize, vsize);
         }
     
         void ByteDanceProcessor::processFaceDetect() {
@@ -253,7 +230,7 @@ namespace agora {
             bef_ai_face_info faceInfo;
             memset(&faceInfo, 0, sizeof(bef_ai_face_info));
             bef_effect_result_t ret;
-            ret = bef_effect_ai_face_detect(faceDetectHandler_, rgbaBuffer_, BEF_AI_PIX_FMT_RGBA8888, prevFrame_.yStride, prevFrame_.height, prevFrame_.yStride * 4, BEF_AI_CLOCKWISE_ROTATE_0, BEF_DETECT_MODE_VIDEO | BEF_DETECT_FULL, &faceInfo);
+            ret = bef_effect_ai_face_detect(faceDetectHandler_, rgbaBuffer_, BEF_AI_PIX_FMT_RGBA8888, prevFrame_.width, prevFrame_.height, prevFrame_.width * 4, BEF_AI_CLOCKWISE_ROTATE_0, BEF_DETECT_MODE_VIDEO | BEF_DETECT_FULL, &faceInfo);
             CHECK_BEF_AI_RET_SUCCESS(ret, "ByteDanceProcessor::processFaceDetect face info detect failed ! %d", ret);
             bef_ai_face_attribute_result attributeResult;
             if (faceInfo.face_count > 0) {
@@ -264,9 +241,9 @@ namespace agora {
 
                 ret = bef_effect_ai_face_attribute_detect_batch(faceAttributesHandler_, rgbaBuffer_,
                                                                 BEF_AI_PIX_FMT_RGBA8888,
-                                                                prevFrame_.yStride,
+                                                                prevFrame_.width,
                                                                 prevFrame_.height,
-                                                                prevFrame_.yStride * 4,
+                                                                prevFrame_.width * 4,
                                                                 faceInfo.base_infos,
                                                                 faceInfo.face_count, attriConfig,
                                                                 &attributeResult);
@@ -359,8 +336,8 @@ namespace agora {
             bef_ai_hand_info handInfo;
             bef_effect_result_t ret;
             ret = bef_effect_ai_hand_detect(handDetectHandler_, rgbaBuffer_,
-                                            BEF_AI_PIX_FMT_RGBA8888, prevFrame_.yStride,
-                                            prevFrame_.height, prevFrame_.yStride * 4,
+                                            BEF_AI_PIX_FMT_RGBA8888, prevFrame_.width,
+                                            prevFrame_.height, prevFrame_.width * 4,
                                             BEF_AI_CLOCKWISE_ROTATE_0,
                                             BEF_AI_HAND_MODEL_DETECT | BEF_AI_HAND_MODEL_BOX_REG |
                                             BEF_AI_HAND_MODEL_GESTURE_CLS |
@@ -420,8 +397,8 @@ namespace agora {
             bef_effect_result_t ret;
             bef_ai_light_cls_result lightInfo;
             ret = bef_effect_ai_lightcls_detect(lightDetectHandler_, rgbaBuffer_,
-                                                BEF_AI_PIX_FMT_RGBA8888, prevFrame_.yStride,
-                                                prevFrame_.height, prevFrame_.yStride * 4,
+                                                BEF_AI_PIX_FMT_RGBA8888, prevFrame_.width,
+                                                prevFrame_.height, prevFrame_.width * 4,
                                                 BEF_AI_CLOCKWISE_ROTATE_0, &lightInfo);
             CHECK_BEF_AI_RET_SUCCESS(ret, "light detect failed ! %d", ret);
             rapidjson::StringBuffer strBuf;
@@ -440,7 +417,7 @@ namespace agora {
             dataCallback(text);
         }
 
-        int ByteDanceProcessor::processFrame(const agora::media::base::VideoFrame &capturedFrame) {
+        int ByteDanceProcessor::processFrame(agora::rtc::VideoFrameInfo &capturedFrame) {
 //            PRINTF_INFO("processFrame: w: %d,  h: %d,  r: %d", capturedFrame.width, capturedFrame.height, capturedFrame.rotation);
             const std::lock_guard<std::mutex> lock(mutex_);
 
@@ -492,10 +469,6 @@ namespace agora {
             faceStickerEnabled_ = false;
             faceStickerItemPath_.clear();
 
-            if (yuvBuffer_) {
-                free(yuvBuffer_);
-                yuvBuffer_ = nullptr;
-            }
             if (rgbaBuffer_) {
                 free(rgbaBuffer_);
                 rgbaBuffer_ = nullptr;
@@ -712,8 +685,8 @@ namespace agora {
         }
 
         void ByteDanceProcessor::dataCallback(const char* data){
-            if (control_ != nullptr) {
-                control_->fireEvent(id_, "beauty", data);
+            if (control_) {
+                control_->postEvent("beauty", data);
             }
         }
     }

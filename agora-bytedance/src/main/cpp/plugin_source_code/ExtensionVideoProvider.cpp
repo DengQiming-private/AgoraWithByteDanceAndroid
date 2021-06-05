@@ -19,32 +19,30 @@ namespace agora {
             instance_ = nullptr;
         }
 
-        int ExtensionVideoProvider::setExtensionVendor(std::string vendor) {
-            PRINTF_INFO("ExtensionVideoProvider vendor %s", vendor.c_str());
-            byteDanceProcessor_->setExtensionVendor(vendor.c_str());
-            return 0;
+        void ExtensionVideoProvider::enumerateExtensions(ExtensionMetaInfo* extension_list,
+                                                           int& extension_count) {
+            extension_count = 1;
+            ExtensionMetaInfo i;
+            i.type = EXTENSION_TYPE::VIDEO_PRE_PROCESSING_FILTER;
+            i.extension_name = "Beauty";
+            extension_list[0] = i;
         }
 
-        agora_refptr<agora::rtc::IVideoFilter> ExtensionVideoProvider::createVideoFilter() {
-            PRINTF_INFO("ExtensionVideoProvider::createVideoFilter");
+        agora_refptr<agora::rtc::IExtensionVideoFilter> ExtensionVideoProvider::createVideoFilter(const char* name) {
+            PRINTF_INFO("ExtensionVideoProvider::createVideoFilter %s", name);
             auto videoFilter = new agora::RefCountedObject<agora::extension::ExtensionVideoFilter>(byteDanceProcessor_);
             return videoFilter;
         }
 
-        agora_refptr<agora::rtc::IAudioFilter> ExtensionVideoProvider::createAudioFilter() {
+        agora_refptr<agora::rtc::IAudioFilter> ExtensionVideoProvider::createAudioFilter(const char* name) {
             return nullptr;
         }
 
-        agora_refptr<agora::rtc::IVideoSinkBase> ExtensionVideoProvider::createVideoSink() {
+        agora_refptr<agora::rtc::IVideoSinkBase> ExtensionVideoProvider::createVideoSink(const char* name) {
             return nullptr;
-        }
-
-        ExtensionVideoProvider::PROVIDER_TYPE ExtensionVideoProvider::getProviderType() {
-            return agora::rtc::IExtensionProvider::LOCAL_VIDEO_FILTER;
         }
 
         void ExtensionVideoProvider::setExtensionControl(rtc::IExtensionControl* control){
-            byteDanceProcessor_->setExtensionControl(control);
         }
     }
 }

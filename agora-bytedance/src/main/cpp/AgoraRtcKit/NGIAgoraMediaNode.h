@@ -1,6 +1,15 @@
 #pragma once
 #include "AgoraRefPtr.h"
 #include "AgoraBase.h"
+#include "NGIAgoraVideoFrame.h"
+
+#ifndef OPTIONAL_PROCESSRESULT_SPECIFIER
+#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1800)
+#define OPTIONAL_PROCESSRESULT_SPECIFIER ProcessResult::
+#else
+#define OPTIONAL_PROCESSRESULT_SPECIFIER
+#endif
+#endif
 
 namespace agora {
 namespace rtc {
@@ -23,6 +32,16 @@ class IAudioFilterBase : public RefCountInterface {
    */
   virtual bool adaptAudioFrame(const media::base::AudioPcmFrame& inAudioFrame,
                                media::base::AudioPcmFrame& adaptedFrame) = 0;
+
+  /**
+   * Get the sample rate supported by the audio filter, the framework will resample
+   * the audio data and then pass it to the audio filter.
+   * @return
+   * - 0: Audio data will not be resampled.
+   * - > 0: Audio data will be resampled to this sample rate.
+   */
+  virtual int getPreferredSampleRate() = 0;
+
  protected:
   ~IAudioFilterBase() {}
 };
@@ -80,6 +99,16 @@ class IAudioFilter : public IAudioFilterBase {
    */
   virtual const char * getName() const = 0;
 
+  /**
+   * Get the sample rate supported by the audio filter, the framework will resample
+   * the audio data and then pass it to the audio filter. If the user does not
+   * overwrite, resampling will not be done by default.
+   * @return
+   * - 0: Audio data will not be resampled.
+   * - > 0: Audio data will be resampled to this sample rate.
+   */
+  int getPreferredSampleRate() override { return 0; };
+
  protected:
   ~IAudioFilter() {}
 };
@@ -121,7 +150,7 @@ class IVideoFilter : public IVideoFilterBase {
    * - `false`: Do not enable the video filter. If the filter is disabled, frames will be passed without
    * adaption.
    */
-  virtual void setEnabled(bool enable) { (void) enable; }
+  virtual void setEnabled(bool enable) {}
   /**
    * Checks whether the video filter is enabled.
    * @return
@@ -139,12 +168,7 @@ class IVideoFilter : public IVideoFilterBase {
    * - The actual size of the private property, if the method call succeeds.
    * - -1, if the method call fails.
    */
-  virtual size_t setProperty(const char* key, const void* buf, size_t buf_size) {
-    (void)key;
-    (void)buf;
-    (void)buf_size;
-    return -1;
-  }
+  virtual int setProperty(const char* key, const void* buf, size_t buf_size) { return -1; }
   /**
    * Gets a private property in the IVideoFilter class.
    *
@@ -155,12 +179,7 @@ class IVideoFilter : public IVideoFilterBase {
    * - The actual size of the private property, if the method call succeeds.
    * - -1, if the method call fails.
    */
-  virtual size_t getProperty(const char* key, void* buf, size_t buf_size) {
-    (void) key;
-    (void) buf;
-    (void) buf_size;
-    return -1;
-  }
+  virtual int getProperty(const char* key, void* buf, size_t buf_size) { return -1; }
   /**
    * This function is invoked right before data stream starts.
    * Custom filter can override this function for initialization.
@@ -182,6 +201,55 @@ class IVideoFilter : public IVideoFilterBase {
    * - `false`: The filter is implemented by internal users.
    */
   virtual bool isExternal() { return true; }
+  /**
+   * This function indicates if the filter is implemented by third-party providers.
+   * @note Do not override this function.
+   * @return
+   * - `true`: The filter is implemented by third-party providers.
+   * - `false`: otherwise.
+   */
+  virtual bool isExtensionFilter() { return false; }
+};
+
+class IExtensionVideoFilter : public IVideoFilter {
+ public:
+  enum ProcessMode {
+    kSync,
+    kAsync,
+  };
+
+  enum ProcessResult {
+    kSuccess,
+    kBypass,
+    kDrop,
+  };
+
+  class Control : public RefCountInterface {
+   public:
+    virtual ProcessResult deliverVideoFrame(agora::agora_refptr<IVideoFrame> frame) = 0;
+    virtual agora::agora_refptr<IVideoFrameMemoryPool> getMemoryPool() = 0;
+    virtual int postEvent(const char* key, const char* value) = 0;
+    virtual void disableMe(int error, const char* msg) = 0;
+  };
+
+  virtual void getProcessMode(ProcessMode& mode, bool& isolated) = 0;
+  virtual int start(agora::agora_refptr<Control> control) = 0;
+  virtual int stop() = 0;
+  virtual void getVideoFormatWanted(VideoFrameInfo::Type& type, MemPixelBuffer::Format& format) = 0;
+  virtual ProcessResult pendVideoFrame(agora::agora_refptr<IVideoFrame> frame) {
+    return OPTIONAL_PROCESSRESULT_SPECIFIER kBypass;
+  }
+  virtual ProcessResult adaptVideoFrame(agora::agora_refptr<IVideoFrame> in, agora::agora_refptr<IVideoFrame>& out) {
+    return OPTIONAL_PROCESSRESULT_SPECIFIER kBypass;
+  }
+
+  // NOTE: The following two interfaces should never be overriden!
+  virtual bool isExtensionFilter() { return true; }
+  virtual bool adaptVideoFrame(
+      const media::base::VideoFrame& capturedFrame,
+      media::base::VideoFrame& adaptedFrame) {
+    return -ERR_NOT_SUPPORTED;
+  }
 };
 
 /**
@@ -199,12 +267,7 @@ class IVideoSinkBase : public RefCountInterface {
    * - The actual size of the private property, if the method call succeeds.
    * - -1, if the method call fails.
    */
-  virtual int setProperty(const char* key, const void* buf, int buf_size) {
-    (void)key;
-    (void)buf;
-    (void)buf_size;
-    return -1;
-  }
+  virtual int setProperty(const char* key, const void* buf, int buf_size) { return -1; }
   /**
    * Gets a private property in the `IVideoFilter` class.
    *
@@ -215,12 +278,7 @@ class IVideoSinkBase : public RefCountInterface {
    * - The actual size of the private property, if the method call succeeds.
    * - -1, if the method call fails.
    */
-  virtual int getProperty(const char* key, void* buf, int buf_size) {
-    (void)key;
-    (void)buf;
-    (void)buf_size;
-    return -1;
-  }
+  virtual int getProperty(const char* key, void* buf, int buf_size) { return -1; }
   /**
    * Occurs when the `IVideoSinkBase` object receives the video frame.
    * @param videoFrame The reference to the video frame.
@@ -249,11 +307,10 @@ class IVideoSinkBase : public RefCountInterface {
 class IMediaExtensionObserver : public RefCountInterface {
 public:
   virtual ~IMediaExtensionObserver() {}
-  virtual void onEvent(const char* id, const char* key, const char* json_value) {
-    (void)id;
-    (void)key;
-    (void)json_value;
-  }
+  virtual void onEvent(const char* provider_name, const char* ext_name, const char* key, const char* json_value) {}
+  virtual void onExtensionStopped(const char* provider_name, const char* ext_name) {}
+  virtual void onExtensionStarted(const char* provider_name, const char* ext_name) {}
+  virtual void onExtensionErrored(const char* provider_name, const char* ext_name, int error, const char* msg) {}
 };
 
 /**
@@ -350,7 +407,7 @@ class IMediaControlPacketReceiver {
    * @param length The length of the packet.
    *
    */
-  virtual bool onMediaControlPacketReceived(const uint8_t *packet, size_t length) = 0;
+  virtual bool onMediaControlPacketReceived(uid_t uid, const uint8_t *packet, size_t length) = 0;
 
   virtual ~IMediaControlPacketReceiver() {}
 };
@@ -486,7 +543,7 @@ class IVideoEncodedImageSender : public RefCountInterface {
    */
   virtual bool sendEncodedVideoImage(const uint8_t* imageBuffer, size_t length,
                                      const EncodedVideoFrameInfo& videoEncodedFrameInfo) = 0;
- 
+
  protected:
   ~IVideoEncodedImageSender() {}
 };
@@ -605,56 +662,6 @@ class IVideoRenderer : public IVideoSinkBase {
    * - < 0: Failure.
    */
   virtual int unsetView() = 0;
-};
-
-class IRecordingDeviceSource : public RefCountInterface {
-  public:
-  /**
-   * Initialize the recording device source.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-    virtual int initialize() = 0;
-
-  /**
-   * Start recording.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-    virtual int startRecording() = 0;
-
-  /**
-   * Stop recording.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-    virtual int stopRecording() = 0;
-
-  /**
-   * Registers an audio frame observer.
-   *
-   * @param observer The pointer to the IAudioFrameObserver object.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-    virtual int registerAudioPcmDataCallback(media::base::IAudioFrameObserver* dataCallback) = 0;
-
-  /**
-   * Releases the registered IAudioFrameObserver object.
-   *
-   * @param observer The pointer to the IAudioFrameObserver object created by the \ref registerAudioPcmDataCallback
-   * "registerAudioPcmDataCallback" method.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-    virtual int unregisterAudioPcmDataCallback(media::base::IAudioFrameObserver* dataCallback) = 0;
-
-    virtual ~IRecordingDeviceSource() {}
 };
 
 static const int kDeviceIdSize = 128;

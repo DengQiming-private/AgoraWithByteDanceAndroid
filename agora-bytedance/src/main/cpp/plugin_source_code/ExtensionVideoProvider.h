@@ -32,17 +32,11 @@ namespace agora {
 
             ~ExtensionVideoProvider();
 
-            PROVIDER_TYPE getProviderType() override;
-
-            virtual void setExtensionControl(rtc::IExtensionControl* control) override;
-
-            virtual agora_refptr<rtc::IAudioFilter> createAudioFilter() override;
-
-            virtual agora_refptr<rtc::IVideoFilter> createVideoFilter() override;
-
-            virtual agora_refptr<rtc::IVideoSinkBase> createVideoSink() override;
-
-            int setExtensionVendor(std::string vendor);
+            void setExtensionControl(rtc::IExtensionControl* control) override;
+            void enumerateExtensions(ExtensionMetaInfo* extension_list, int& extension_count) override;
+            agora_refptr<rtc::IAudioFilter> createAudioFilter(const char* name) override;
+            agora_refptr<rtc::IExtensionVideoFilter> createVideoFilter(const char* name) override;
+            agora_refptr<rtc::IVideoSinkBase> createVideoSink(const char* name) override;
         };
     }
 }

@@ -32,7 +32,6 @@ add_library( # Sets the name of the library.
              # Sets the library as a shared library.
              SHARED
         plugin_source_code/ExtensionVideoProvider.cpp
-        plugin_source_code/ExtensionAudioProvider.cpp
         plugin_source_code/ExtensionVideoFilter.cpp
         plugin_source_code/ExtensionAudioFilter.cpp
         plugin_source_code/EGLCore.cpp
