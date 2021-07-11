@@ -102,6 +102,36 @@ public:
   virtual bool removeAudioFilter(agora_refptr<IAudioFilter> filter, AudioFilterPosition position) = 0;
 
   /**
+   * Enable / Disable specified audio filter
+   * @param id id of the filter
+   * @param enable enable / disable the filter with given id
+   * @return
+   * - 0: success
+   * - <0: failure
+   */
+  virtual int enableAudioFilter(const char* id, bool enable) {
+    (void)id;
+    (void)enable;
+    return -1;
+  }
+
+  /**
+   * set the properties of the specified audio filter
+   * @param id id of the filter
+   * @param key key of the property
+   * @param jsonValue json str value of the property
+   * @return
+   * - 0: success
+   * - <0: failure
+   */
+  virtual int setFilterProperty(const char* id, const char* key, const char* jsonValue) {
+    (void)id;
+    (void)key;
+    (void)jsonValue;
+    return -1;
+  }
+
+  /**
    * Gets the audio filter by its name.
    *
    * @param name The name of the audio filter.
@@ -182,9 +212,17 @@ class ILocalAudioTrack : public IAudioTrack {
      */
     uint32_t dropped_audio_frames;
     /**
+     * The number of playout audio frames.
+     */
+    uint32_t playout_audio_frames;
+    /**
      * The type of audio effect.
      */
     uint32_t effect_type;
+    /**
+     * Whether the hardware ear monitor is enabled.
+     */
+    uint32_t hw_ear_monitor;
     /**
      * Whether the local audio track is enabled.
      */
@@ -196,7 +234,9 @@ class ILocalAudioTrack : public IAudioTrack {
                              sent_audio_frames(0),
                              pushed_audio_frames(0),
                              dropped_audio_frames(0),
+                             playout_audio_frames(0),
                              effect_type(0),
+                             hw_ear_monitor(0),
                              enabled(false) {}
   };
 

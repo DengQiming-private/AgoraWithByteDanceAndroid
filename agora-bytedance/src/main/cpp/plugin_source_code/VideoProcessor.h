@@ -27,7 +27,7 @@ namespace agora {
 
             bool releaseOpenGL();
 
-            int processFrame(agora::rtc::VideoFrameInfo &capturedFrame);
+            int processFrame(agora::rtc::VideoFrameData &capturedFrame);
 
             int releaseEffectEngine();
 
@@ -47,8 +47,8 @@ namespace agora {
             void processFaceDetect();
             void processHandDetect();
             void processLightDetect();
-            void processEffect(agora::rtc::VideoFrameInfo &capturedFrame);
-            void prepareCachedVideoFrame(agora::rtc::VideoFrameInfo &capturedFrame);
+            void processEffect(agora::rtc::VideoFrameData &capturedFrame);
+            void prepareCachedVideoFrame(agora::rtc::VideoFrameData &capturedFrame);
 
 #if defined(__ANDROID__) || defined(TARGET_OS_ANDROID)
             EglCore *eglCore_ = nullptr;
@@ -83,7 +83,7 @@ namespace agora {
             std::string lightDetectModelPath_;
             bef_effect_handle_t lightDetectHandler_ = nullptr;
 
-            agora::rtc::VideoFrameInfo prevFrame_;
+            agora::rtc::VideoFrameData prevFrame_;
             unsigned char* rgbaBuffer_ = nullptr;
 
             bool faceStickerEnabled_ = false;

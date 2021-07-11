@@ -1393,6 +1393,9 @@ struct VideoDimensions {
   int height;
   VideoDimensions() : width(640), height(480) {}
   VideoDimensions(int w, int h) : width(w), height(h) {}
+  bool operator==(const VideoDimensions& rhs) const {
+    return width == rhs.width && height == rhs.height;
+  }
 };
 
 /**
@@ -1952,6 +1955,9 @@ struct SimulcastStreamConfig {
    */
   int framerate;
   SimulcastStreamConfig() : dimensions(160, 120), bitrate(65), framerate(5) {}
+  bool operator==(const SimulcastStreamConfig& rhs) const {
+    return dimensions == rhs.dimensions && bitrate == rhs.bitrate && framerate == rhs.framerate;
+  }
 };
 
 /**
@@ -4641,12 +4647,12 @@ enum ENCRYPTION_MODE {
   /** 4: 128-bit SM4 encryption, ECB mode.
    */
   SM4_128_ECB = 4,
-  /** 5: (Default) 128-bit AES encryption, GCM mode.
+  /** 7: (Default) 128-bit AES encryption, GCM mode, with KDF salt.
    */
-  AES_128_GCM = 5,
-  /** 6: 256-bit AES encryption, GCM mode.
+  AES_128_GCM2 = 7,
+  /** 8: 256-bit AES encryption, GCM mode, with KDF salt.
    */
-  AES_256_GCM = 6,
+  AES_256_GCM2 = 8,
   /** Enumerator boundary.
    */
   MODE_END,
@@ -4655,7 +4661,7 @@ enum ENCRYPTION_MODE {
 /** Configurations of the built-in encryption schemas. */
 struct EncryptionConfig {
   /**
-   * The encryption mode. The default encryption mode is `AES_128_GCM`. See #ENCRYPTION_MODE.
+   * The encryption mode. The default encryption mode is `AES_128_GCM2`. See #ENCRYPTION_MODE.
    */
   ENCRYPTION_MODE encryptionMode;
   /**
@@ -4667,7 +4673,7 @@ struct EncryptionConfig {
   uint8_t encryptionKdfSalt[32];
 
   EncryptionConfig()
-    : encryptionMode(AES_128_GCM),
+    : encryptionMode(AES_128_GCM2),
       encryptionKey(NULL)
   {
     memset(encryptionKdfSalt, 0, sizeof(encryptionKdfSalt));
@@ -4678,9 +4684,9 @@ struct EncryptionConfig {
     switch(encryptionMode) {
       case SM4_128_ECB:
         return "sm4-128-ecb";
-      case AES_128_GCM:
+      case AES_128_GCM2:
         return "aes-128-gcm";
-      case AES_256_GCM:
+      case AES_256_GCM2:
         return "aes-256-gcm";
       default:
         return "aes-128-gcm";

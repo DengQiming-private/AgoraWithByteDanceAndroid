@@ -14,7 +14,7 @@ namespace agora {
     namespace extension {
         class ExtensionAudioFilter : public agora::rtc::IAudioFilter {
         public:
-            ExtensionAudioFilter(agora_refptr<AdjustVolumeAudioProcessor> byteDanceProcessor);
+            ExtensionAudioFilter(const char* name, agora_refptr<AdjustVolumeAudioProcessor> byteDanceProcessor);
             ~ExtensionAudioFilter();
             bool adaptAudioFrame(const media::base::AudioPcmFrame& inAudioPcmFrame,
                                  media::base::AudioPcmFrame& adaptedPcmFrame) override;
@@ -22,9 +22,10 @@ namespace agora {
             bool isEnabled() const override { return enabled_; }
             int setProperty(const char* key, const void* buf, int buf_size) override;
             int getProperty(const char* key, void* buf, int buf_size) const override { return ERR_OK; }
-            const char* getName() const override { return audioProcessor_->getVendorName(); }
+            const char* getName() const override { return filterName_.c_str(); }
         private:
             std::atomic_bool enabled_ = {true};
+            std::string filterName_;
             agora_refptr<AdjustVolumeAudioProcessor> audioProcessor_;
         protected:
             ExtensionAudioFilter() = default;

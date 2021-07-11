@@ -221,7 +221,16 @@ class ICameraCapturer : public RefCountInterface {
     * - 0: Success.
    * - < 0: Failure.
    */
-  virtual int32_t setCameraFaceDetection(bool enable) = 0;
+  virtual int32_t enableFaceDetection(bool enable) = 0;
+
+  /**
+   * Checks whether the camera face detect is supported.
+   *
+   * @return
+   * - true: The camera face detect is supported.
+   * - false: The camera face detect is not supported.
+   */
+  virtual bool isCameraFaceDetectSupported() = 0;
 
   /**
    * Checks whether the camera flash function is supported.
@@ -335,17 +344,13 @@ class ICameraCapturer : public RefCountInterface {
    * - < 0: Failure.
    */
   virtual int initWithDeviceName(const char* deviceName) = 0;
+#endif
+
   /**
    * Set the device orientation of the capture device
    * @param VIDEO_ORIENTATION orientaion of the device 0(by default), 90, 180, 270
    */
   virtual void setDeviceOrientation(VIDEO_ORIENTATION orientation) = 0;
-  /**
-   * Get the device orientation of the capture device
-   * @return VIDEO_ORIENTATION orientaion of the device 0(by default), 90, 180, 270
-   */
-  virtual VIDEO_ORIENTATION getDeviceOrientation() = 0;
-#endif
 
   /**
    * Sets the format of the video captured by the camera.

@@ -69,6 +69,8 @@
 */
 #define KEY_RTC_AUDIO_ENABLE_AGORA_AEC               "rtc.audio.aec.enable"
 
+#define KEY_RTC_AUDIO_MAX_TARGET_DELAY               "rtc.audio.max_target_delay"
+
 /**
   * enable/disable agora agc logic, enabled by default
 */

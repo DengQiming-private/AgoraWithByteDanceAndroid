@@ -57,7 +57,7 @@ namespace agora {
             return true;
         }
 
-        void ByteDanceProcessor::prepareCachedVideoFrame(agora::rtc::VideoFrameInfo &capturedFrame) {
+        void ByteDanceProcessor::prepareCachedVideoFrame(agora::rtc::VideoFrameData &capturedFrame) {
             int yStride = capturedFrame.width;
             if (rgbaBuffer_ == nullptr ||
                 prevFrame_.width != capturedFrame.width ||
@@ -71,14 +71,14 @@ namespace agora {
             }
 
             // update RGBA buffer
-            cvt_yuv2rgba(capturedFrame.memBuffer.data, rgbaBuffer_, BEF_AI_PIX_FMT_YUV420P, capturedFrame.width,
+            cvt_yuv2rgba(capturedFrame.pixels.data, rgbaBuffer_, BEF_AI_PIX_FMT_YUV420P, capturedFrame.width,
                          capturedFrame.height, capturedFrame.width, capturedFrame.height,
                          BEF_AI_CLOCKWISE_ROTATE_0,
                          false);
             prevFrame_ = capturedFrame;
         }
 
-        void ByteDanceProcessor::processEffect(agora::rtc::VideoFrameInfo &capturedFrame) {
+        void ByteDanceProcessor::processEffect(agora::rtc::VideoFrameData &capturedFrame) {
             if (!byteEffectHandler_) {
                 bef_effect_result_t ret;
                 ret = bef_effect_ai_create(&byteEffectHandler_);
@@ -108,7 +108,6 @@ namespace agora {
                                          "ByteDanceProcessor::processEffect set composer mode failed %d",
                                          ret);
             }
-
             if (aiEffectNeedUpdate_) {
                 bef_effect_result_t ret;
                 if (aiNodeCount_ <= 0) {
@@ -137,7 +136,6 @@ namespace agora {
                 }
                 aiEffectNeedUpdate_ = false;
             }
-
             uint64_t timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::system_clock::now().time_since_epoch()).count();
             bef_effect_ai_set_width_height(byteEffectHandler_, capturedFrame.width,
@@ -155,7 +153,6 @@ namespace agora {
                                          "ByteDanceProcessor::updateEffect clear sticker effect failed %d",
                                          ret);
             }
-
             ret = bef_effect_ai_algorithm_buffer(byteEffectHandler_, rgbaBuffer_,
                                                  BEF_AI_PIX_FMT_RGBA8888, capturedFrame.width,
                                                  capturedFrame.height, capturedFrame.width * 4,
@@ -170,8 +167,7 @@ namespace agora {
             CHECK_BEF_AI_RET_SUCCESS(ret,
                                      "ByteDanceProcessor::updateEffect ai process buffer failed %d",
                                      ret);
-
-            cvt_rgba2yuv(rgbaBuffer_, capturedFrame.memBuffer.data, BEF_AI_PIX_FMT_YUV420P, capturedFrame.width,
+            cvt_rgba2yuv(rgbaBuffer_, capturedFrame.pixels.data, BEF_AI_PIX_FMT_YUV420P, capturedFrame.width,
                          capturedFrame.height);
         }
     
@@ -417,7 +413,7 @@ namespace agora {
             dataCallback(text);
         }
 
-        int ByteDanceProcessor::processFrame(agora::rtc::VideoFrameInfo &capturedFrame) {
+        int ByteDanceProcessor::processFrame(agora::rtc::VideoFrameData &capturedFrame) {
 //            PRINTF_INFO("processFrame: w: %d,  h: %d,  r: %d", capturedFrame.width, capturedFrame.height, capturedFrame.rotation);
             const std::lock_guard<std::mutex> lock(mutex_);
 

@@ -13,7 +13,6 @@
 #include "AgoraRtcKit/NGIAgoraMediaNode.h"
 #include "AgoraRtcKit/AgoraMediaBase.h"
 
-
 namespace agora {
     namespace extension {
         class AdjustVolumeAudioProcessor  : public RefCountInterface {
@@ -29,10 +28,6 @@ namespace agora {
                 control_ = control;
                 return 0;
             };
-
-            char* getVendorName() {
-                return "Agora";
-            }
         protected:
             ~AdjustVolumeAudioProcessor() {}
         private:

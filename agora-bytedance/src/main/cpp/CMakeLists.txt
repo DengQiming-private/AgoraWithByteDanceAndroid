@@ -5,17 +5,14 @@
 
 cmake_minimum_required(VERSION 3.4.1)
 
-project(native-lib)
+project(agora-bytedance)
 
 #link agora so
-#set(agora-lib-so ${PROJECT_SOURCE_DIR}/../jniLibs/${CMAKE_ANDROID_ARCH_ABI}/libagora-rtc-sdk-jni.so)
-
-#link_libraries(${agora-lib-so})
-
+set(agora-lib-so ${PROJECT_SOURCE_DIR}/../agoraLibs/${CMAKE_ANDROID_ARCH_ABI}/libagora-rtc-sdk-jni.so)
+link_libraries(${agora-lib-so})
 
 #link bytedance so
 set(bytedance-lib-so ${PROJECT_SOURCE_DIR}/../jniLibs/${CMAKE_ANDROID_ARCH_ABI}/libeffect.so)
-
 link_libraries(${bytedance-lib-so})
 
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
@@ -27,19 +24,20 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 # Gradle automatically packages shared libraries with your APK.
 
 add_library( # Sets the name of the library.
-             native-lib
+        agora-bytedance
 
              # Sets the library as a shared library.
              SHARED
-        plugin_source_code/ExtensionVideoProvider.cpp
+        plugin_source_code/ExtensionProvider.cpp
         plugin_source_code/ExtensionVideoFilter.cpp
         plugin_source_code/ExtensionAudioFilter.cpp
         plugin_source_code/EGLCore.cpp
         plugin_source_code/JniHelper.cpp
         plugin_source_code/VideoProcessor.cpp
         plugin_source_code/AudioProcessor.cpp
-             # Provides a relative path to your source file(s).
-        native-lib.cpp)
+        plugin_source_code/external_thread_pool.cpp
+        # Provides a relative path to your source file(s).
+        agora-bytedance.cpp)
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
@@ -58,11 +56,11 @@ find_library( # Sets the name of the path variable.
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
 
-target_include_directories(native-lib PRIVATE ${PROJECT_SOURCE_DIR})
+target_include_directories(agora-bytedance PRIVATE ${PROJECT_SOURCE_DIR})
 
 target_link_libraries( # Specifies the target library.
-                       native-lib
-#                        ${agora-lib-so}
+                        agora-bytedance
+                        ${agora-lib-so}
                         ${bytedance-lib-so}
                        # Links the target library to the log library
                        # included in the NDK.

@@ -65,5 +65,5 @@ class IExtensionProvider : public RefCountInterface {
   virtual ~IExtensionProvider() {}
 };
 
-}
-}
+}  // namespace rtc
+}  // namespace agora

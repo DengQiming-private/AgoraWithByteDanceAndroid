@@ -9,11 +9,14 @@
 #pragma once  // NOLINT(build/header_guard)
 #include "AgoraBase.h"
 #include "AgoraRefPtr.h"
+#include "AgoraRefCountedObject.h"
 #include "IAgoraLog.h"
 #include "NGIAgoraVideoFrame.h"
+#include "NGIAgoraExtensionProvider.h"
 
 namespace agora {
 namespace rtc {
+class IExtensionProvider;
 /**
  * Interface for handling agora extensions.
  */
@@ -69,7 +72,25 @@ class IExtensionControl {
    */
   virtual int log(commons::LOG_LEVEL level, const char* message) = 0;
 
+  /**
+   * Post extension events to SDK.
+   *
+   * @param provider_name name of the provider
+   * @param ext_name name of the extension
+   * @param event_key key of the extension event
+   * @param event_json_str string of the extension event
+   * @return
+   * - 0: The method call succeeds.
+   * - <0: The method call fails.
+   */
   virtual int fireEvent(const char* provider_name, const char* ext_name, const char* event_key, const char* event_json_str) = 0;
+
+  /**
+   * Register provider to the SDK
+   * @param provider_name name of the provider
+   * @param provider instance of the provider
+   */
+  virtual int registerProvider(const char* provider_name, agora_refptr<IExtensionProvider> provider) = 0;
 
  protected:
   virtual ~IExtensionControl() {}

@@ -822,11 +822,6 @@ class IAgoraService {
 
   virtual int removeExtensionObserver(agora::agora_refptr<agora::rtc::IMediaExtensionObserver> observer) = 0;
 
-  virtual int addExtensionProvider(const char* id,
-    agora_refptr<rtc::IExtensionProvider> provider) = 0;
-
-  virtual int removeExtensionProvider(const char* id) = 0;
-
  protected:
   virtual ~IAgoraService() {}
 };

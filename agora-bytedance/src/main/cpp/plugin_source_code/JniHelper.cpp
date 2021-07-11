@@ -43,6 +43,16 @@ namespace agora {
             return jniHelper;
         }
 
+        jobject JniHelper::getGlobalContext(JNIEnv **env) {
+            jclass activityThread = (*env)->FindClass("android/app/ActivityThread");
+            jmethodID currentActivityThread = (*env)->GetStaticMethodID(activityThread, "currentActivityThread", "()Landroid/app/ActivityThread;");
+            jobject at = (*env)->CallStaticObjectMethod(activityThread, currentActivityThread);
+
+            jmethodID getApplication = (*env)->GetMethodID(activityThread, "getApplication", "()Landroid/app/Application;");
+            jobject context = (*env)->CallObjectMethod(at, getApplication);
+            return context;
+        }
+
         JNIEnv *JniHelper::attachCurrentThread() {
             JNIEnv *env = nullptr;
             int status = javaVm->GetEnv((void **) &env, JNI_VERSION_1_6);

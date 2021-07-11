@@ -9,20 +9,10 @@ import java.io.IOException;
 
 @Keep
 public class ExtensionManager {
-    public static final String VENDOR_NAME_VIDEO = "ByteDance";
-    public static final String VENDOR_NAME_AUDIO = "Agora";
-    static {
-        System.loadLibrary("native-lib");
-    }
-    public enum PROVIDER_TYPE {
-        LOCAL_AUDIO_FILTER,
-        REMOTE_AUDIO_FILTER,
-        LOCAL_VIDEO_FILTER,
-        REMOTE_VIDEO_FILTER,
-        LOCAL_VIDEO_SINK,
-        REMOTE_VIDEO_SINK,
-        UNKNOWN,
-    };
+    public static final String EXTENSION_NAME = "agora-bytedance"; // Name of target link library used in CMakeLists.txt
+    public static final String EXTENSION_VENDOR_NAME = "ByteDance"; // Provider name used for registering in agora-bytedance.cpp
+    public static final String EXTENSION_VIDEO_FILTER_NAME = "Beauty"; // Video filter name defined in ExtensionProvider.h
+    public static final String EXTENSION_AUDIO_FILTER_NAME = "VolumeChange"; // Audio filter name defined in ExtensionProvider.h
 
     public static void copyResource(Context context) {
         String path = "resource";
@@ -35,6 +25,4 @@ public class ExtensionManager {
             e.printStackTrace();
         }
     }
-
-    public static native long nativeGetExtensionProvider(Context context);
 }

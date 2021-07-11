@@ -2,35 +2,28 @@
 // Created by 张涛 on 2020/4/26.
 //
 
-#ifndef AGORAWITHBYTEDANCE_EXTENSION_VIDEOPROVIDER_H
-#define AGORAWITHBYTEDANCE_EXTENSION_VIDEOPROVIDER_H
+#ifndef AGORAWITHBYTEDANCE_EXTENSION_PROVIDER_H
+#define AGORAWITHBYTEDANCE_EXTENSION_PROVIDER_H
 
 #include "AgoraRtcKit/NGIAgoraExtensionProvider.h"
 #include "ExtensionVideoFilter.h"
+#include "ExtensionAudioFilter.h"
 
 namespace agora {
     namespace extension {
+        static const char* VIDEO_FILTER_NAME = "Beauty";
+        static const char* AUDIO_FILTER_NAME = "VolumeChange";
 
         class ByteDanceProcessor;
 
-        class ExtensionVideoProvider : public agora::rtc::IExtensionProvider {
+        class ExtensionProvider : public agora::rtc::IExtensionProvider {
         private:
-            static ExtensionVideoProvider* instance_;
             agora_refptr<ByteDanceProcessor> byteDanceProcessor_;
+            agora_refptr<AdjustVolumeAudioProcessor> audioProcessor_;
         public:
-            static void create() {
-                if (instance_ == nullptr){
-                    instance_ = new agora::RefCountedObject<ExtensionVideoProvider>();
-                }
-            }
+            ExtensionProvider();
 
-            static ExtensionVideoProvider* getInstance(){
-                return instance_;
-            };
-
-            ExtensionVideoProvider();
-
-            ~ExtensionVideoProvider();
+            ~ExtensionProvider();
 
             void setExtensionControl(rtc::IExtensionControl* control) override;
             void enumerateExtensions(ExtensionMetaInfo* extension_list, int& extension_count) override;
@@ -40,4 +33,4 @@ namespace agora {
         };
     }
 }
-#endif //AGORAWITHBYTEDANCE_EXTENSION_VIDEOPROVIDER_H
+#endif //AGORAWITHBYTEDANCE_EXTENSION_PROVIDER_H

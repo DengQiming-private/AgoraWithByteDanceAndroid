@@ -30,6 +30,8 @@ namespace agora {
 
             static void release();
 
+            jobject getGlobalContext(JNIEnv **env);
+
             JNIEnv *getEnv();
 
             JNIEnv *attachCurrentThread();

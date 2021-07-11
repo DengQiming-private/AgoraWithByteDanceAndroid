@@ -8,7 +8,8 @@
 
 namespace agora {
     namespace extension {
-        ExtensionAudioFilter::ExtensionAudioFilter(agora_refptr<AdjustVolumeAudioProcessor> audioProcessor) {
+        ExtensionAudioFilter::ExtensionAudioFilter(const char* name, agora_refptr<AdjustVolumeAudioProcessor> audioProcessor) {
+            filterName_ = name;
             audioProcessor_ = audioProcessor;
         }
 

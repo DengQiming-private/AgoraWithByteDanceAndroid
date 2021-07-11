@@ -9,6 +9,7 @@
 #include <AgoraRtcKit/AgoraRefCountedObject.h>
 #include "AgoraRtcKit/AgoraRefPtr.h"
 #include "VideoProcessor.h"
+#include "external_thread_pool.h"
 
 namespace agora {
     namespace extension {
@@ -21,7 +22,7 @@ namespace agora {
             void getProcessMode(ProcessMode& mode, bool& isolated) override;
             int start(agora::agora_refptr<Control> control) override;
             int stop() override;
-            void getVideoFormatWanted(rtc::VideoFrameInfo::Type& type, rtc::MemPixelBuffer::Format& format) override;
+            void getVideoFormatWanted(rtc::VideoFrameData::Type& type, rtc::RawPixelBuffer::Format& format) override;
             IExtensionVideoFilter::ProcessResult pendVideoFrame(
                     agora::agora_refptr<rtc::IVideoFrame> frame) override;
             IExtensionVideoFilter::ProcessResult adaptVideoFrame(
@@ -34,9 +35,11 @@ namespace agora {
 
         private:
             agora::agora_refptr<Control> control_;
-            agora_refptr<ByteDanceProcessor> byteDanceProcessor_;
+            agora::agora_refptr<ByteDanceProcessor> byteDanceProcessor_;
             bool isInitOpenGL = false;
             ProcessMode mode_;
+            agora::rtc::extensions::ThreadPool threadPool_;
+            int invoker_id = -1;
         protected:
             ExtensionVideoFilter() = default;
 

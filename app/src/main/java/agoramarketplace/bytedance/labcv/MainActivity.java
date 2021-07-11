@@ -23,8 +23,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
-
 import io.agora.extension.ExtensionManager;
 import io.agora.extension.ResourceHelper;
 import io.agora.extension.UtilsAsyncTask;
@@ -43,7 +41,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             Manifest.permission.CAMERA
     };
 
-    private static final String appId = "aab8b8f5a8cd4469a63042fcfafe7063";
+    private static final String appId = "#YOUR APP ID#";
     private final static String TAG = "Agora_zt java :";
     private final static String channelName = "agora_extension";
     private static final int PERMISSION_REQ_ID = 22;
@@ -129,7 +127,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-//                mRtcEngine.setExtensionProperty(Constants.MediaSourceType.AUDIO_SOURCE_MICROPHONE, ExtensionManager.VENDOR_NAME_AUDIO, "volume", ""+i);
+                mRtcEngine.setExtensionProperty(ExtensionManager.EXTENSION_VENDOR_NAME, ExtensionManager.EXTENSION_AUDIO_FILTER_NAME, "volume", ""+i);
             }
 
             @Override
@@ -158,10 +156,11 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             RtcEngineConfig config = new RtcEngineConfig();
             config.mContext = this;
             config.mAppId = appId;
-            long videoProvider = ExtensionManager.nativeGetExtensionProvider(this);
+//            long videoProvider = ExtensionManager.nativeGetExtensionProvider(this);
 //            long audioProvider = ExtensionManager.nativeGetExtensionProvider(this, ExtensionManager.VENDOR_NAME_AUDIO);
-            Log.d(TAG, "Extension provider video: " + videoProvider);
-            config.addExtension(ExtensionManager.VENDOR_NAME_VIDEO, videoProvider);
+//            Log.d(TAG, "Extension provider video: " + videoProvider);
+//            config.addExtension(ExtensionManager.VENDOR_NAME_VIDEO, videoProvider);
+            config.addExtension(ExtensionManager.EXTENSION_NAME);
             config.mExtensionObserver = this;
             config.mEventHandler = new IRtcEngineEventHandler() {
                 @Override
@@ -206,8 +205,8 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             };
             mRtcEngine = RtcEngine.create(config);
             //extension is enabled by default
-//            mRtcEngine.enableExtension(ExtensionManager.VENDOR_NAME, true);
-            mRtcEngine.enableExtension(ExtensionManager.VENDOR_NAME_VIDEO, "Beauty", true);
+            mRtcEngine.enableExtension(ExtensionManager.EXTENSION_VENDOR_NAME, ExtensionManager.EXTENSION_VIDEO_FILTER_NAME, true);
+            mRtcEngine.enableExtension(ExtensionManager.EXTENSION_VENDOR_NAME, ExtensionManager.EXTENSION_AUDIO_FILTER_NAME, true);
             setupLocalVideo();
             VideoEncoderConfiguration configuration = new VideoEncoderConfiguration(640, 360,
                     VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_30,
@@ -317,7 +316,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
 //            arr.put(node4);
             o.put("plugin.bytedance.ai.composer.nodes", arr);
 
-            mRtcEngine.setExtensionProperty(ExtensionManager.VENDOR_NAME_VIDEO, "Beauty", "key", o.toString());
+            mRtcEngine.setExtensionProperty(ExtensionManager.EXTENSION_VENDOR_NAME, ExtensionManager.EXTENSION_VIDEO_FILTER_NAME, "key", o.toString());
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -330,7 +329,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             o.put("plugin.bytedance.faceAttributeEnabled", false);
             o.put("plugin.bytedance.faceStickerEnabled", false);
             o.put("plugin.bytedance.handDetectEnabled", false);
-            mRtcEngine.setExtensionProperty(ExtensionManager.VENDOR_NAME_VIDEO, "Beauty", "key", o.toString());
+            mRtcEngine.setExtensionProperty(ExtensionManager.EXTENSION_VENDOR_NAME, ExtensionManager.EXTENSION_VIDEO_FILTER_NAME, "key", o.toString());
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -351,6 +350,7 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
 
     @Override
     public void onEvent(String vendor, String extension, String key, String value) {
+//        Log.i(TAG, "onEvent vendor: " + vendor + "  extension: " + extension + "  key: " + key + "  value: " + value);
         try {
             JSONObject o = new JSONObject(value);
             if (o.has("plugin.bytedance.light.info")) {
