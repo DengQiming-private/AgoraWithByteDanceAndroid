@@ -18,11 +18,13 @@ namespace agora {
         }
 
         //Set the process mode between the SDK and the video plug-in
-        //If set to Sync mode, the SDK and video plug-in will pass data through adaptVideoFrame
-        //If set to Async mode, the SDK and video plug-ins will pass data through pendVideoFrame and deliverVideoFrame
-        void ExtensionVideoFilter::getProcessMode(ProcessMode& mode, bool& isolated) {
-            mode = ProcessMode::kAsync;
-            isolated = false;
+        //If set ProcessMode to Sync mode, Agora SDK and video extension will pass data through adaptVideoFrame
+        //If set ProcessMode to Async mode, Agora SDK and video extension will pass data through pendVideoFrame and deliverVideoFrame
+        //If set independent_thread to false, all callbacks sent by Agora SDK are performed on the internal video processing thread
+        //If set independent_thread to true, all callbacks sent by Agora SDK are performed on a separate thread
+        void ExtensionVideoFilter::getProcessMode(ProcessMode& mode, bool& independent_thread) {
+            mode = ProcessMode::kSync;
+            independent_thread = false;
             mode_ = mode;
         }
 

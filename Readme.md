@@ -24,15 +24,9 @@ private static final String appId = "#YOUR APP ID#";
 RtcEngineConfig config = new RtcEngineConfig();
 config.mContext = this;
 config.mAppId = appId;
-//Obtain the native provider handle through the API provided by the plugin
-long videoProvider = ExtensionManager.nativeGetExtensionProvider(this, ExtensionManager.VENDOR_NAME_VIDEO,
-		ExtensionManager.PROVIDER_TYPE.LOCAL_VIDEO_FILTER.ordinal());
-long audioProvider = ExtensionManager.nativeGetExtensionProvider(this, ExtensionManager.VENDOR_NAME_AUDIO,
-		ExtensionManager.PROVIDER_TYPE.LOCAL_AUDIO_FILTER.ordinal());
-//One or more native provider handles can be added, 
-//where VENDOR_NAME is used to distinguish different plug-ins
-config.addExtension(ExtensionManager.VENDOR_NAME_VIDEO, videoProvider);
-config.addExtension(ExtensionManager.VENDOR_NAME_AUDIO, audioProvider);
+//Name of dynamic link library is provided by plug-in vendor,
+//e.g. libagora-bytedance.so whose EXTENSION_NAME should be "agora-bytedance"
+config.addExtension(ExtensionManager.EXTENSION_NAME);
 //Observer is used to monitor the messages reported by the plug-in
 config.mExtensionObserver = this;
 ......
@@ -43,14 +37,15 @@ mRtcEngine = RtcEngine.create(config);
 mRtcEngine.joinChannel("", channelName, "", 0);
 ```
 
-2.1 addExtensionProvider can be called multiple times to register multiple plug-ins (different VENDOR_NAME is required)
+2.1 RtcEngineConfig.addExtension can be called for multiple times to register multiple plug-ins (different EXTENSION_NAME is required)
 
 2.2 The `io.agora.rtc2.IMediaExtensionObserver#onEvent` interface needs to be implemented to receive the message callback of the registered plug-in
 ```
 @Override
-public void onEvent(String vendor, String key, String value) {
-//The vendor is the VENDOR_NAME when registering the plug-in above, 
-//and the key/value is the key-value pair of the message from plug-in
+public void onEvent(String vendor, String extension, String key, String value) {
+//The vendor is the name of registered plug-in when RtcEngine is created, 
+//the extension is the name of video/audio extension filter created in the plug-in,
+//the key/value is the key-value pair of message from plug-in.
 ......
 }
 ```
@@ -60,17 +55,13 @@ public void onEvent(String vendor, String key, String value) {
 Set model loading, beautification, sticker parameters, and parameters are set as json mode
 
 ```
-// Android
-mRtcEngine.setExtensionProperty(VIDEO_SOURCE_CAMERA_PRIMARY, ExtensionManager.VENDOR_NAME_VIDEO, "key", "value");
+//The vendor is the name of registered plug-in when RtcEngine is created, 
+//the extension is the name of video/audio extension filter created in the plug-in (a plug-in can contain multiple extension filters),
+//the key/value is the key-value pair of parameter to be set into the plug-in.
+mRtcEngine.setExtensionProperty(ExtensionManager.EXTENSION_VENDOR_NAME, ExtensionManager.EXTENSION_VIDEO_FILTER_NAME, "key", "value");
 ```
 
-3.1 MediaSourceType
-
-When the plug-in type is `LOCAL_VIDEO_FILTER`, the `VIDEO_SOURCE` related types in `MediaSourceType` can be used
-
-When the plug-in type is `LOCAL_AUDIO_FILTER`, only the `AUDIO_SOURCE_MICROPHONE` type in `MediaSourceType` is supported at this stage
-
-3.2 The parameters of the ByteDance plug-in are explained as follows
+3.1 The parameters of the ByteDance plug-in are explained as follows
 
 ```
 {

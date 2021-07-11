@@ -156,10 +156,9 @@ public class MainActivity extends AppCompatActivity implements UtilsAsyncTask.On
             RtcEngineConfig config = new RtcEngineConfig();
             config.mContext = this;
             config.mAppId = appId;
-//            long videoProvider = ExtensionManager.nativeGetExtensionProvider(this);
-//            long audioProvider = ExtensionManager.nativeGetExtensionProvider(this, ExtensionManager.VENDOR_NAME_AUDIO);
-//            Log.d(TAG, "Extension provider video: " + videoProvider);
-//            config.addExtension(ExtensionManager.VENDOR_NAME_VIDEO, videoProvider);
+            //Name of dynamic link library is provided by plug-in vendor,
+            //e.g. libagora-bytedance.so whose EXTENSION_NAME should be "agora-bytedance"
+            //and one or more plug-ins can be added
             config.addExtension(ExtensionManager.EXTENSION_NAME);
             config.mExtensionObserver = this;
             config.mEventHandler = new IRtcEngineEventHandler() {
